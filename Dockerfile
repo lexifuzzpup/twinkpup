@@ -27,6 +27,8 @@ COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app/src src
 COPY --from=prerelease /usr/src/app/package.json .
 
+ENV NODE_ENV=production
+
 # run the app
 USER bun
 ENTRYPOINT [ "bun", "run", "src/index.ts" ]
