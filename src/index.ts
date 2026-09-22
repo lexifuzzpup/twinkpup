@@ -5,7 +5,11 @@ import home from "./public/home/index.html";
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 
 function getDb() {
-    return new Database("/usr/db/mydb.sqlite", { create: true });
+    const db = new Database("/usr/db/mydb.sqlite", {
+        create: true
+    });
+    db.run("PRAGMA foreign_keys = ON");
+    return db;
 }
 
 getDb().run(`CREATE TABLE IF NOT EXISTS visits(
@@ -19,8 +23,9 @@ getDb().run(`CREATE TABLE IF NOT EXISTS users(
 getDb().run(`CREATE TABLE IF NOT EXISTS posts(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    author INT REFERENCES users(id),
-    content VARCHAR2(1000)
+    author INT,
+    content VARCHAR2(1000),
+    FOREIGN KEY(author) REFERENCES users(id)
 )`);
 
 const server = serve({
@@ -29,7 +34,7 @@ const server = serve({
         "/": home,
         "/api/visit": {
             async POST() {
-                const db = getDb();
+                using db = getDb();
                 db.run("INSERT INTO visits(time) VALUES(CURRENT_TIMESTAMP)");
 
                 return Response.json(db.query("SELECT COUNT(time) AS visits FROM visits").get());
@@ -37,18 +42,23 @@ const server = serve({
         },
         "/api/posts": {
             async GET() {
-                const db = getDb();
+                using db = getDb();
 
                 const select = db.query(`
-                    SELECT id, UNIXEPOCH(time) AS time, author, content
-                    FROM posts
+                    SELECT p.id,
+                           UNIXEPOCH(p.time) AS time,
+                           p.author AS author_id,
+                           u.name AS author_name,
+                           p.content
+                    FROM posts p
+                    LEFT JOIN users u ON p.author = u.id
                     ORDER BY time DESC
                     LIMIT 20
                 `);
                 return Response.json(select.all());
             },
             async POST(req) {
-                const db = getDb();
+                using db = getDb();
                 const { content } = await req.json() as { content: string };
                 const insert = db.query(`
                     INSERT INTO posts(time, author, content)

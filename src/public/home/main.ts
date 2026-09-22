@@ -6,7 +6,8 @@ main();
 
 interface PostCard {
     id: number;
-    author: string;
+    author_id: number;
+    author_name: string;
     time: number;
     content: string;
 }
@@ -41,11 +42,11 @@ function createPostCard(post: PostCard) {
     container.classList.add("post");
 
     const author = document.createElement("span");
-    if(post.author == null) {
+    if(post.author_name == null) {
         author.textContent = "Anonymous";
         author.style.fontStyle = "oblique";
     } else {
-        author.textContent = post.author;
+        author.textContent = post.author_name;
     }
     author.classList.add("author");
 
