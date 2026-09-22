@@ -23,9 +23,8 @@ getDb().run(`CREATE TABLE IF NOT EXISTS users(
 getDb().run(`CREATE TABLE IF NOT EXISTS posts(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    author INT,
-    content VARCHAR2(1000),
-    FOREIGN KEY(author) REFERENCES users(id)
+    author INT REFERENCES users(id),
+    content VARCHAR2(1000)
 )`);
 
 const server = serve({
