@@ -1,0 +1,5 @@
+services:
+  twinkpup:
+    build:
+      context: .
+      network: host
