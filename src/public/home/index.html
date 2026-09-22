@@ -1,13 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background: #000;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>twinkpup.com</title>
 
+    <link rel="stylesheet" href="style.css">
+
     <script type="module" src="./main.ts"></script>
 </head>
 <body>
-    <span>This site has been visited <span id="visit-count">...</span> time(s)!</span>
+    <div class="background"></div>
+    <span style="font-size: 1.5em;">this site has been visited <span id="visit-count" style="font-size: 1.5em;">...</span> time(s) !!</span>
+
+    <fieldset>
+        <legend>new post</legend>
+        <form id="new-post">
+            <textarea name="content" rows="16" cols="64" style="display: block;" maxlength="1000" autocomplete="off"
+                placeholder="write your smutty confessions here"></textarea>
+            <input type="submit" value="Submit">
+        </form>
+    </fieldset>
+
+    <fieldset>
+        <legend>recent posts</legend>
+
+        <div id="recent-posts"></div>
+    </fieldset>
 </body>
 </html>
