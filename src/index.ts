@@ -1,6 +1,8 @@
 import { serve } from "bun";
 import { Database } from "bun:sqlite";
 import home from "./public/home/index.html";
+import { migrate } from "bun-migrate";
+import z from "zod";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 
@@ -12,20 +14,15 @@ function getDb() {
     return db;
 }
 
-getDb().run(`CREATE TABLE IF NOT EXISTS visits(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)`);
-getDb().run(`CREATE TABLE IF NOT EXISTS users(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR2(50) UNIQUE CHECK(LENGTH(name) BETWEEN 4 AND 50)
-)`);
-getDb().run(`CREATE TABLE IF NOT EXISTS posts(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    author INT REFERENCES users(id),
-    content VARCHAR2(1000)
-)`);
+await migrate(getDb(), {
+    migrations: "src/migrations"
+});
+
+const userContentSchema = {
+    post_post: z.object({
+        content: z.string().nonempty()
+    })
+};
 
 const server = serve({
     development: developmentEnabled,
@@ -57,13 +54,20 @@ const server = serve({
                 return Response.json(select.all());
             },
             async POST(req) {
+                const rawData = await req.json();
+                let payload: z.infer<typeof userContentSchema.post_post>;
+                try {
+                    payload = userContentSchema.post_post.parse(rawData);
+                } catch(e) {
+                    return new Response("Schema mismatch", { status: 422 })
+                }
+                
                 using db = getDb();
-                const { content } = await req.json() as { content: string };
                 const insert = db.query(`
                     INSERT INTO posts(time, author, content)
                     VALUES(CURRENT_TIMESTAMP, NULL, $content)
                 `);
-                insert.run({ $content: content });
+                insert.run({ $content: payload.content });
                 
                 return Response.json({ success: true });
             }

@@ -8,5 +8,9 @@
   },
   "peerDependencies": {
     "typescript": "^7"
+  },
+  "dependencies": {
+    "bun-migrate": "redraskal/bun-migrate#main",
+    "zod": "^4.6.5"
   }
 }
