@@ -38,10 +38,10 @@ async function main() {
 }
 
 function createPostCard(post: PostCard) {
-    const container = document.createElement("div");
+    const container = document.createElement("fieldset");
     container.classList.add("post");
 
-    const author = document.createElement("span");
+    const author = document.createElement("legend");
     if(post.author_name == null) {
         author.textContent = "Anonymous";
         author.style.fontStyle = "oblique";
