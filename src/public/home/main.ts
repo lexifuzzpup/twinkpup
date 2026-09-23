@@ -13,28 +13,31 @@ interface PostCard {
 }
 
 async function main() {
-    try {
-        await loadVisitCounter()
-    } catch(e) {
-        console.error("Failed to load visit counter:", e);
-    }
-    try {
-        await loadRecentPosts()
-    } catch(e) {
-        console.error("Failed to load recent posts:", e);
-    }
+    await fetch("/api/visit", { method: "POST" });
+    
+    await loadVisitCounter();
+    await loadRecentPosts();
 
     if(newPostForm) {
         newPostForm.addEventListener("submit", async event => {
             event.preventDefault();
-            const formData = new FormData(newPostForm);
+            const contentBox = newPostForm.getElementsByTagName("textarea").item(0);
+            if(!contentBox) return;
 
-            const content = formData.get("content") as string;
+            const content = contentBox.value;
+            contentBox.value = "";
 
-            await fetch("/api/posts", { method: "POST", body: JSON.stringify({ content }) });
-            document.location.reload();
+            const request = await fetch("/api/posts", { method: "POST", body: JSON.stringify({ content }) });
+            if(request.ok) {
+                await loadRecentPosts();
+            }
         })
     }
+
+    setInterval(() => {
+        loadVisitCounter();
+        loadRecentPosts();
+    }, 10 * 1000);
 }
 
 function createPostCard(post: PostCard) {
@@ -73,22 +76,27 @@ async function loadRecentPosts() {
     const request = await fetch("/api/posts");
     if(request.ok) {
         const posts = await request.json();
-
+        
+        recentPosts.replaceChildren();
         for(const post of posts) {
             const card = createPostCard(post);
 
             recentPosts.append(card);
         }
+    } else {
+        console.error("Failed to load recent posts");
     }
 }
 
 async function loadVisitCounter() {
     if(!visitCounter) return;
 
-    const request = await fetch("/api/visit", { method: "POST" });
+    const request = await fetch("/api/visit");
     if(request.ok) {
         const response = await request.json();
 
         visitCounter.textContent = `${response.visits}`;
+    } else {
+        console.error("Failed to load visit counter");
     }
 }
