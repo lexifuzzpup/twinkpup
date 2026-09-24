@@ -264,7 +264,7 @@ const server = serve({
                 const session = createSession(db, user);
                 req.cookies.set("token", session.token, { expires: session.expireDate });
 
-                return Response.json(db.query(statements.FIND_USER_INFO_BY_TOKEN).get(session.token));
+                return Response.json({ token: session.token });
             }
         }
     }
