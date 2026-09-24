@@ -82,7 +82,6 @@ input[type="submit"], button {
 
 code {
     white-space: pre;
-    word-break: break-all;
     overflow-wrap: break-word;
     display: block;
     text-wrap: wrap;
