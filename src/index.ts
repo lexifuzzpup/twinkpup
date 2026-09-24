@@ -247,7 +247,10 @@ const server = serve({
                 using db = getDb();
                 const user: any = db.query(statements.FIND_USER_LOGIN).get(payload.username);
                 if(user == null) {
-                    return new Response("Not found", { status: 404 });
+                    return Response.json(
+                        { error: "unknown_user" },
+                        { status: 404 }
+                    );
                 }
                 const login: any = db.query(statements.GET_LOGIN_BY_ID).get(user.login);
 
@@ -255,10 +258,16 @@ const server = serve({
                     const success = await password.verify(payload.password, login.password);
 
                     if(!success) {
-                        return new Response("Invalid password", { status: 401 });
+                        return Response.json(
+                            { error: "invalid_password" },
+                            { status: 401 }
+                        );
                     }
                 } else {
-                    return new Response("Unknown auth type", { status: 406 });
+                    return Response.json(
+                        { error: "unknown_auth_type" },
+                        { status: 400 }
+                    );
                 }
 
                 const session = createSession(db, user);

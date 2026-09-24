@@ -33,9 +33,10 @@ loginForm?.addEventListener("submit", async event => {
     } else {
         const response = await request.json().catch();
 
-        if(response?.error) {
-            loginFormError(response.error.field, response.error.message);
-            return;
+        if(response.error == "unknown_user") {
+            loginFormError("username", "this username does not exist !!");
+        } else if(response.error == "invalid_password") {
+            loginFormError("password", "this password is wrong...");
         } else {
             loginFormError("username", "an unknown error happened (ﾐዋ ﻌ ዋﾐ)ﾉ");
         }
