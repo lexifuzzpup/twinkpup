@@ -37,11 +37,15 @@ const userContentSchema = {
     LOGIN: z.object({
         username: z.string().nonempty(),
         password: z.string().nonempty()
+    }),
+    PATCH_USER: z.object({
+        // username: z.string().optional(),
+        bio: z.string().optional(),
     })
 };
 const statements = {
     GET_VISIT_COUNT: "SELECT COUNT(time) AS visits FROM visits",
-    NEW_VISIT: "INSERT INTO visits() VALUES()",
+    NEW_VISIT: "INSERT INTO visits(time) VALUES(CURRENT_TIMESTAMP)",
     GET_POSTS: `
         SELECT p.id,
                 UNIXEPOCH(p.time) AS time,
@@ -82,7 +86,7 @@ const statements = {
         INSERT INTO users(name, login)
         VALUES($name, $login)
     `,
-    GET_USER_INFO_BY_ID: "SELECT id, name, profile_thread FROM users WHERE id = ?",
+    GET_USER_INFO_BY_ID: "SELECT id, name, profile_thread, bio FROM users WHERE id = ?",
     FIND_USER_LOGIN: "SELECT * FROM users WHERE name = ?",
     GET_LOGIN_BY_ID: "SELECT * FROM logins WHERE id = ?",
     NEW_SESSION: `
@@ -114,6 +118,11 @@ const statements = {
         INSERT INTO threads(creation_time)
         VALUES(CURRENT_TIMESTAMP)
     `,
+    SET_USER_BIO: `
+        UPDATE users
+        SET bio = $bio
+        WHERE id = $id
+    `
 }
 
 function createSession(db: Database, user: any) {
@@ -203,12 +212,41 @@ const server = serve({
             const user = db.query(statements.FIND_USER_INFO_BY_TOKEN).get(SHA512.hash(token, "base64"));
             return Response.json(user);
         },
-        "/api/user/:id": async req => {
-            using db = getDb();
-            const user = db.query(statements.GET_USER_INFO_BY_ID).get(req.params.id);
+        "/api/user/:id": {
+            async GET(req) {
+                using db = getDb();
+                const user = db.query(statements.GET_USER_INFO_BY_ID).get(req.params.id);
 
-            if(user == null) return Response.json(null, { status: 404 });
-            return Response.json(user);
+                if(user == null) return Response.json(null, { status: 404 });
+                return Response.json(user);
+            },
+            async PATCH(req) {
+                const rawData = await req.json();
+                let payload: z.infer<typeof userContentSchema.PATCH_USER>;
+                try {
+                    payload = userContentSchema.PATCH_USER.parse(rawData);
+                } catch(e) {
+                    return new Response("Schema mismatch", { status: 422 })
+                }
+
+                using db = getDb();
+
+                const token = req.cookies.get("token");
+                let user: any;
+                if(token != null) {
+                    user = db.query(statements.FIND_USER_BY_TOKEN).get(SHA512.hash(token, "base64"));
+                }
+
+                if(user?.id != req.params.id) {
+                    return new Response("Forbidden", { status: 403 });
+                }
+
+                if(payload.bio != null) {
+                    db.prepare(statements.SET_USER_BIO).run({ $id: req.params.id, $bio: payload.bio });
+                }
+
+                return new Response();
+            }
         },
         "/api/register": {
             async POST(req) {

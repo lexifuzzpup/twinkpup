@@ -1,2 +1,15 @@
 @import url('../global.css');
 @import url('../posts.css');
+
+.user-profile {
+    textarea {
+        resize: vertical;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    code {
+        background: #000;
+        padding: 0.5rem;
+        border: 1px solid currentColor;
+    }
+}

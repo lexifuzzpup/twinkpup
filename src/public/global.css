@@ -21,7 +21,7 @@ textarea {
     color: inherit;
 }
 
-textarea, fieldset, input {
+textarea, fieldset, input, button {
     border-color: rgb(118, 0, 222);
 }
 
@@ -71,7 +71,21 @@ form {
     font-style: italic;
 }
 
-input {
+input, button {
     color: #f0f;
     background: #000;
+}
+
+input[type="submit"], button {
+    cursor: pointer;
+}
+
+code {
+    white-space: pre;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    display: block;
+    text-wrap: wrap;
+    padding: 0.5rem;
+    padding-top: 0;
 }

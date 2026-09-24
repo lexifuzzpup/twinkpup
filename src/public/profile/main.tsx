@@ -49,6 +49,7 @@ function Home() {
 
 function Profile({ me, user }: { me: UserDetails | null, user: UserDetails }) {
     const [posts, setPosts] = useState<PostDetails[]>([]);
+    const [editingBio, setEditingBio] = useState<boolean>(false);
 
     async function reloadPosts() {
         const request = await fetch("/api/thread/" + user.profile_thread);
@@ -73,8 +74,34 @@ function Profile({ me, user }: { me: UserDetails | null, user: UserDetails }) {
 
     return (
         <>
-            <fieldset id="user-profile">
+            <fieldset className="user-profile">
                 <legend className="super-aware">{user.name}'s profile</legend>
+
+                {
+                    editingBio
+                    ? <BioEditor
+                        defaultBio={user.bio ?? ""}
+                        onClose={() => setEditingBio(false)}
+                        onSave={async (newBio) => {
+                            const request = await fetch("/api/user/" + user.id, {
+                                method: "PATCH",
+                                body: JSON.stringify({ bio: newBio })
+                            });
+
+                            if(request.ok) {
+                                setEditingBio(false);
+                                user.bio = newBio;
+                            } else {
+                                alert("an error happened !! look @ console 4 details");
+                                console.error(request.status + " : " + request.statusText + ":\n" + await request.text());
+                            }
+                        }}
+                    />
+                    : <>
+                        <code>{user.bio ?? ""}</code>
+                        { user.id == me?.id && <button onClick={() => setEditingBio(true)}>edit</button> }
+                    </>
+                }
 
                 {
                     user.profile_thread ? <>
@@ -97,4 +124,16 @@ function Profile({ me, user }: { me: UserDetails | null, user: UserDetails }) {
             </fieldset>
         </>
     );
+}
+
+function BioEditor({ defaultBio, onSave, onClose }: { defaultBio: string, onSave: (bio: string) => void, onClose: () => void }) {
+    const [ bio, setBio ] = useState(defaultBio);
+
+    return (
+        <>
+            <textarea value={bio} onChange={e => setBio(e.target.value)} maxLength={4000}></textarea>
+            <button onClick={() => onSave(bio)}>save</button>
+            <button onClick={() => onClose()}>cancel</button>
+        </>
+    )
 }

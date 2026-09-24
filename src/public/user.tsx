@@ -2,6 +2,7 @@ export interface UserDetails {
     id: number;
     name: string;
     profile_thread: number;
+    bio?: string;
 }
 
 export function PostingAsBanner({ user }: { user: UserDetails | null }) {
