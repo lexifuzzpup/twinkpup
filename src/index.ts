@@ -212,6 +212,13 @@ const server = serve({
                     );
                 }
 
+                if(/[^A-Za-z0-9\-_\.]/g.test(payload.username)) {
+                    return Response.json(
+                        { error: "invalid_username" },
+                        { status: 400 }
+                    )
+                }
+
                 using db = getDb();
 
                 if(db.query(statements.USERNAME_TAKEN).get(payload.username)) {

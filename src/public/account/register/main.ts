@@ -56,6 +56,8 @@ registerForm?.addEventListener("submit", async event => {
             registerFormError("username", "someone else stole this username...");
         } else if(response.error == "password_length") {
             registerFormError("password", `must be ${formatMinMax(response.min, response.max)} characters !!`);
+        } else if(response.error == "invalid_username") {
+            registerFormError("username", "letters, numberz, dashes, underscores, and dots only.. U・ﻌ・U");
         } else {
             registerFormError("username", "an unknown error happened (ﾐዋ ﻌ ዋﾐ)ﾉ");
         }
