@@ -98,7 +98,7 @@ function Profile({ me, user }: { me: UserDetails | null, user: UserDetails }) {
                         }}
                     />
                     : <>
-                        <code>{user.bio ?? ""}</code>
+                        <code className="bio">{user.bio || "<no bio>"}</code>
                         { user.id == me?.id && <button onClick={() => setEditingBio(true)}>edit</button> }
                     </>
                 }
