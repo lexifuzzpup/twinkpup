@@ -4,13 +4,15 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19.3.0"
   },
   "peerDependencies": {
     "typescript": "^7"
   },
   "dependencies": {
     "bun-migrate": "redraskal/bun-migrate#main",
+    "react-dom": "^19.3.0",
     "zod": "^4.6.5"
   }
 }
