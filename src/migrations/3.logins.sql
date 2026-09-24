@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS logins(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    password TEXT
+);
+
+ALTER TABLE users
+    ADD COLUMN login INTEGER REFERENCES logins(id);

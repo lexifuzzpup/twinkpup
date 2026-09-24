@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" style="background: #000;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>register @ twinkpup.com</title>
+
+    <link rel="stylesheet" href="./style.css">
+
+    <script type="module" src="./main.ts"></script>
+</head>
+<body>
+    <div class="background"></div>
+
+    <fieldset style="width: 24rem;">
+        <legend style="font-size: 2rem;">new account</legend>
+        <a href="/account/login">log into an existing one instead?</a>
+        <form id="register">
+            <section id="account-username">
+                <label for="account-username">Username</label>
+                <span class="error"></span>
+                <input type="text" required name="username" autocomplete="username">
+            </section>
+            <section id="account-password">
+                <label for="account-password">Password</label>
+                <span class="error"></span>
+                <input type="password" required name="password" autocomplete="new-password">
+            </section>
+            <section id="account-password-confirm">
+                <label for="account-password-confirm">Confirm Password</label>
+                <span class="error"></span>
+                <input type="password" required name="password-confirm" autocomplete="new-password">
+            </section>
+
+            <input type="submit" value="register!">
+        </form>
+    </fieldset>
+</body>
+</html>

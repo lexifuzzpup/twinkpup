@@ -1,6 +1,7 @@
 const visitCounter = document.querySelector("#visit-count") as HTMLSpanElement;
 const newPostForm = document.querySelector("#new-post") as HTMLFormElement;
 const recentPosts = document.querySelector("#recent-posts") as HTMLDivElement;
+const accountNotice = document.querySelector("#account-notice") as HTMLDivElement;
 
 main();
 
@@ -17,6 +18,7 @@ async function main() {
     
     await loadVisitCounter();
     await loadRecentPosts();
+    await loadAccountNotice();
 
     if(newPostForm) {
         newPostForm.addEventListener("submit", async event => {
@@ -68,6 +70,64 @@ function createPostCard(post: PostCard) {
 
     container.append(author, timestamp, content);
     return container;
+}
+
+async function loadAccountNotice() {
+    if(!accountNotice) return;
+
+    const request = await fetch("/api/user/me");
+    if(request.ok) {
+        const me = await request.json();
+        
+        const label = document.createElement("span");
+        const accountManagementPrompt = document.createElement("span");
+        label.style.fontSize = "1.5em";
+
+        if(me == null) {
+            label.textContent = "ANONYMOUS";
+            
+            const loginButton = document.createElement("a");
+            loginButton.textContent = "log in";
+            loginButton.href = "/account/login";
+
+            const registerButton = document.createElement("a");
+            registerButton.textContent = "create account";
+            registerButton.href = "/account/register";
+            
+            accountManagementPrompt.replaceChildren(
+                loginButton,
+                document.createTextNode(" or "),
+                registerButton
+            );
+
+            accountNotice.replaceChildren(
+                document.createTextNode("you are posting as the elusive "),
+                label,
+                document.createTextNode(".. "),
+                accountManagementPrompt
+            );
+        } else {
+            label.textContent = me.name;
+            
+            const logoutButton = document.createElement("a");
+            logoutButton.textContent = "log out";
+            logoutButton.href = "/account/logout";
+            accountManagementPrompt.replaceChildren(
+                document.createTextNode(" (or "),
+                logoutButton,
+                document.createTextNode(")")
+            );
+
+            accountNotice.replaceChildren(
+                document.createTextNode("you are logged in as "),
+                label,
+                document.createTextNode(" !!"),
+                accountManagementPrompt
+            );
+        }
+    } else {
+        console.error("Failed to load account notice");
+    }
 }
 
 async function loadRecentPosts() {

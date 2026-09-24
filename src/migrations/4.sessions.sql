@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS sessions(
+    token VARCHAR2(256) PRIMARY KEY,
+    user INTEGER REFERENCES users(id),
+    expires_on TIMESTAMP NOT NULL
+);

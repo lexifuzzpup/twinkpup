@@ -1,8 +1,12 @@
-import { serve } from "bun";
+import { password, serve, SHA512 } from "bun";
+import crypto from "crypto";
 import { Database } from "bun:sqlite";
-import home from "./public/home/index.html";
-import { migrate } from "bun-migrate";
+import { migrate, migrations } from "bun-migrate";
 import z from "zod";
+
+import home_index from "./public/home/index.html";
+import account_register from "./public/account/register/index.html";
+import account_login from "./public/account/login/index.html";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 
@@ -14,13 +18,24 @@ function getDb() {
     return db;
 }
 
-await migrate(getDb(), {
-    migrations: "src/migrations"
+const migrationDb = getDb();
+migrationDb.run("PRAGMA foreign_keys = OFF");
+await migrate(migrationDb, {
+    migrations: (await migrations("src/migrations")).sort((a, b) => a.id - b.id),
+    log: true
 });
 
 const userContentSchema = {
     NEW_POST: z.object({
         content: z.string().nonempty()
+    }),
+    NEW_USER: z.object({
+        username: z.string().nonempty(),
+        password: z.string().nonempty()
+    }),
+    LOGIN: z.object({
+        username: z.string().nonempty(),
+        password: z.string().nonempty()
     })
 };
 const statements = {
@@ -37,17 +52,81 @@ const statements = {
         ORDER BY time DESC
         LIMIT 20
     `,
-    NEW_POST: `
-        INSERT INTO posts(time, author, content)
-        VALUES(CURRENT_TIMESTAMP, NULL, $content)
+    NEW_ANONYMOUS_POST: `
+        INSERT INTO posts(time, content)
+        VALUES(CURRENT_TIMESTAMP, $content)
     `,
-    GET_POST_BY_ID: "SELECT * FROM posts WHERE id = $id"
+    NEW_USER_POST: `
+        INSERT INTO posts(time, author, content)
+        VALUES(CURRENT_TIMESTAMP, $author, $content)
+    `,
+    GET_POST_BY_ID: "SELECT * FROM posts WHERE id = ?",
+    NEW_LOGIN_PASSWORD: `
+        INSERT INTO logins(password)
+        VALUES(?)
+    `,
+    NEW_USER: `
+        INSERT INTO users(name, login)
+        VALUES($name, $login)
+    `,
+    GET_USER_INFO_BY_ID: "SELECT id, name FROM users WHERE id = ?",
+    FIND_USER_LOGIN: "SELECT * FROM users WHERE name = ?",
+    GET_LOGIN_BY_ID: "SELECT * FROM logins WHERE id = ?",
+    NEW_SESSION: `
+        INSERT INTO sessions(token, user, expires_on)
+        VALUES($token, $user, $expires_on)
+    `,
+    DELETE_SESSION_BY_TOKEN: `
+        DELETE FROM sessions
+        WHERE token = ?
+    `,
+    FIND_USER_BY_TOKEN: `
+        SELECT s.token, u.*
+        FROM sessions s
+        JOIN users u ON s.user = u.id
+        WHERE s.token = ?
+    `,
+    FIND_USER_INFO_BY_TOKEN: `
+        SELECT id, name
+        FROM sessions s
+        JOIN users u ON s.user = u.id
+        WHERE s.token = ?
+    `,
+    USERNAME_TAKEN: `
+        SELECT 1
+        FROM users
+        WHERE name = ?
+    `,
+}
+
+function createSession(db: Database, user: any) {
+    const token = crypto.getRandomValues(new Uint8Array(128)).toBase64();
+    const tokenHash = SHA512.hash(token, "base64");
+    const expireDate = new Date();
+    expireDate.setDate(expireDate.getDate() + 3);
+    db.prepare(statements.NEW_SESSION).run({ $token: tokenHash, $user: user.id, $expires_on: expireDate.toISOString() });
+
+    return { token, expireDate };
 }
 
 const server = serve({
     development: developmentEnabled,
     routes: {
-        "/": home,
+        "/": home_index,
+        "/account/register": account_register,
+        "/account/login": account_login,
+        "/account/logout": async req => {
+            using db = getDb();
+
+            const token = req.cookies.get("token");
+            if(token != null) {
+                db.prepare(statements.DELETE_SESSION_BY_TOKEN).run(SHA512.hash(token, "base64"));
+            }
+
+            req.cookies.delete("token");
+            return Response.redirect("/");
+        },
+
         "/api/visit": {
             async GET() {
                 using db = getDb();
@@ -77,11 +156,115 @@ const server = serve({
                 }
                 
                 using db = getDb();
-                const insert = db.query(statements.NEW_POST);
-                const result = insert.run({ $content: payload.content });
-                const inserted = db.query(statements.GET_POST_BY_ID);
+
+                const token = req.cookies.get("token");
+                let user: any;
+                if(token != null) {
+                    user = db.query(statements.FIND_USER_BY_TOKEN).get(SHA512.hash(token, "base64"));
+                }
+
+                const postResult = user == null
+                    ? db.prepare(statements.NEW_ANONYMOUS_POST).run({ $content: payload.content })
+                    : db.prepare(statements.NEW_USER_POST).run({ $content: payload.content, $author: user.id });
+
+                const post = db.query(statements.GET_POST_BY_ID).get(postResult.lastInsertRowid);
                 
-                return Response.json(inserted.get({ $id: result.lastInsertRowid }));
+                return Response.json(post);
+            }
+        },
+        "/api/user/me": async req => {
+            using db = getDb();
+
+            const token = req.cookies.get("token");
+            
+            if(token == null) {
+                return Response.json(null);
+            }
+            
+            const user = db.query(statements.FIND_USER_INFO_BY_TOKEN).get(SHA512.hash(token, "base64"));
+            return Response.json(user);
+        },
+        "/api/user/:id": async req => {
+            using db = getDb();
+
+            return Response.json(db.query(statements.GET_USER_INFO_BY_ID).get({ $id: req.params.id }));
+        },
+        "/api/register": {
+            async POST(req) {
+                const rawData = await req.json();
+                let payload: z.infer<typeof userContentSchema.NEW_USER>;
+                try {
+                    payload = userContentSchema.NEW_USER.parse(rawData);
+                } catch(e) {
+                    return new Response("Schema mismatch", { status: 422 })
+                }
+
+                if(payload.username.length < 4 || payload.username.length > 50) {
+                    return Response.json(
+                        { error: "username_length", min: 4, max: 50 },
+                        { status: 400 }
+                    );
+                }
+                if(payload.password.length < 6) {
+                    return Response.json(
+                        { error: "password_length", min: 6 },
+                        { status: 400 }
+                    );
+                }
+
+                using db = getDb();
+
+                if(db.query(statements.USERNAME_TAKEN).get(payload.username)) {
+                    return Response.json(
+                        { error: "username_taken" },
+                        { status: 400 }
+                    );
+                }
+
+                const hash = await password.hash(payload.password);
+
+                const loginResult = db.query(statements.NEW_LOGIN_PASSWORD).run(hash);
+                const registerResult = db.query(statements.NEW_USER).run({ $name: payload.username, $login: loginResult.lastInsertRowid });
+
+                const user = db.query(statements.GET_USER_INFO_BY_ID).get(registerResult.lastInsertRowid);
+
+                const session = createSession(db, user);
+                req.cookies.set("token", session.token, { expires: session.expireDate });
+
+                return Response.json(user);
+            }
+        },
+        "/api/login": {
+            async POST(req) {
+                const rawData = await req.json();
+                let payload: z.infer<typeof userContentSchema.LOGIN>;
+                try {
+                    payload = userContentSchema.LOGIN.parse(rawData);
+                } catch(e) {
+                    return new Response("Schema mismatch", { status: 422 })
+                }
+
+                using db = getDb();
+                const user: any = db.query(statements.FIND_USER_LOGIN).get(payload.username);
+                if(user == null) {
+                    return new Response("Not found", { status: 404 });
+                }
+                const login: any = db.query(statements.GET_LOGIN_BY_ID).get(user.login);
+
+                if(login.password != null) {
+                    const success = await password.verify(payload.password, login.password);
+
+                    if(!success) {
+                        return new Response("Invalid password", { status: 401 });
+                    }
+                } else {
+                    return new Response("Unknown auth type", { status: 406 });
+                }
+
+                const session = createSession(db, user);
+                req.cookies.set("token", session.token, { expires: session.expireDate });
+
+                return Response.json(db.query(statements.FIND_USER_INFO_BY_TOKEN).get(session.token));
             }
         }
     }
