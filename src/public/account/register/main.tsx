@@ -23,10 +23,10 @@ function Register() {
         <>
             <div className="background"></div>
 
-            <a href="/" style={{ fontSize: "2rem" }}>return home</a>
+            <a href="/" className="super-aware">return home</a>
 
             <fieldset style={{ width: "24rem" }}>
-                <legend style={{ fontSize: "2rem" }}>new account</legend>
+                <legend className="super-aware">new account</legend>
                 <a href="/account/login">log into an existing one instead?</a>
                 <form onSubmit={async event => {
                     event.preventDefault();

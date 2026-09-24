@@ -13,10 +13,10 @@ function Login() {
         <>
             <div className="background"></div>
 
-            <a href="/" style={{ fontSize: "2rem" }}>return home</a>
+            <a href="/" className="super-aware">return home</a>
 
             <fieldset style={{ width: "24rem" }}>
-                <legend style={{ fontSize: "2rem" }}>log into existing account</legend>
+                <legend className="super-aware">log into existing account</legend>
                 <a href="/account/register">make a new one instead?</a>
                 <form onSubmit={async event => {
                     event.preventDefault();

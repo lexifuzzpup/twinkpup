@@ -7,6 +7,7 @@ import z from "zod";
 import home_index from "./public/home/index.html";
 import account_register from "./public/account/register/index.html";
 import account_login from "./public/account/login/index.html";
+import profile_index from "./public/profile/index.html";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 
@@ -40,7 +41,7 @@ const userContentSchema = {
 };
 const statements = {
     GET_VISIT_COUNT: "SELECT COUNT(time) AS visits FROM visits",
-    NEW_VISIT: "INSERT INTO visits(time) VALUES(CURRENT_TIMESTAMP)",
+    NEW_VISIT: "INSERT INTO visits() VALUES()",
     GET_POSTS: `
         SELECT p.id,
                 UNIXEPOCH(p.time) AS time,
@@ -52,13 +53,25 @@ const statements = {
         ORDER BY time DESC
         LIMIT 20
     `,
+    GET_THREAD_POSTS: `
+        SELECT p.id,
+                UNIXEPOCH(p.time) AS time,
+                p.author AS author_id,
+                u.name AS author_name,
+                p.content
+        FROM posts p
+        LEFT JOIN users u ON p.author = u.id
+        WHERE p.thread = $thread
+        ORDER BY time DESC
+        LIMIT $limit
+    `,
     NEW_ANONYMOUS_POST: `
-        INSERT INTO posts(time, content)
-        VALUES(CURRENT_TIMESTAMP, $content)
+        INSERT INTO posts(time, content, thread)
+        VALUES(CURRENT_TIMESTAMP, $content, $thread)
     `,
     NEW_USER_POST: `
-        INSERT INTO posts(time, author, content)
-        VALUES(CURRENT_TIMESTAMP, $author, $content)
+        INSERT INTO posts(time, author, content, thread)
+        VALUES(CURRENT_TIMESTAMP, $author, $content, $thread)
     `,
     GET_POST_BY_ID: "SELECT * FROM posts WHERE id = ?",
     NEW_LOGIN_PASSWORD: `
@@ -69,7 +82,7 @@ const statements = {
         INSERT INTO users(name, login)
         VALUES($name, $login)
     `,
-    GET_USER_INFO_BY_ID: "SELECT id, name FROM users WHERE id = ?",
+    GET_USER_INFO_BY_ID: "SELECT id, name, profile_thread FROM users WHERE id = ?",
     FIND_USER_LOGIN: "SELECT * FROM users WHERE name = ?",
     GET_LOGIN_BY_ID: "SELECT * FROM logins WHERE id = ?",
     NEW_SESSION: `
@@ -87,7 +100,7 @@ const statements = {
         WHERE s.token = ?
     `,
     FIND_USER_INFO_BY_TOKEN: `
-        SELECT id, name
+        SELECT id, name, profile_thread
         FROM sessions s
         JOIN users u ON s.user = u.id
         WHERE s.token = ?
@@ -96,6 +109,10 @@ const statements = {
         SELECT 1
         FROM users
         WHERE name = ?
+    `,
+    NEW_THREAD: `
+        INSERT INTO threads(creation_time)
+        VALUES(CURRENT_TIMESTAMP)
     `,
 }
 
@@ -115,6 +132,8 @@ const server = serve({
         "/": home_index,
         "/account/register": account_register,
         "/account/login": account_login,
+        "/profile/:userId": profile_index,
+
         "/account/logout": async req => {
             using db = getDb();
 
@@ -139,12 +158,12 @@ const server = serve({
                 return Response.json(db.query(statements.GET_VISIT_COUNT).get());
             }
         },
-        "/api/posts": {
-            async GET() {
+        "/api/thread/:threadId": {
+            async GET(req) {
                 using db = getDb();
 
-                const select = db.query(statements.GET_POSTS);
-                return Response.json(select.all());
+                const select = db.query(statements.GET_THREAD_POSTS);
+                return Response.json(select.all({ $thread: req.params.threadId, $limit: 20 }));
             },
             async POST(req) {
                 const rawData = await req.json();
@@ -164,8 +183,8 @@ const server = serve({
                 }
 
                 const postResult = user == null
-                    ? db.prepare(statements.NEW_ANONYMOUS_POST).run({ $content: payload.content })
-                    : db.prepare(statements.NEW_USER_POST).run({ $content: payload.content, $author: user.id });
+                    ? db.prepare(statements.NEW_ANONYMOUS_POST).run({ $content: payload.content, $thread: req.params.threadId })
+                    : db.prepare(statements.NEW_USER_POST).run({ $content: payload.content, $author: user.id, $thread: req.params.threadId });
 
                 const post = db.query(statements.GET_POST_BY_ID).get(postResult.lastInsertRowid);
                 
@@ -186,8 +205,10 @@ const server = serve({
         },
         "/api/user/:id": async req => {
             using db = getDb();
+            const user = db.query(statements.GET_USER_INFO_BY_ID).get(req.params.id);
 
-            return Response.json(db.query(statements.GET_USER_INFO_BY_ID).get({ $id: req.params.id }));
+            if(user == null) return Response.json(null, { status: 404 });
+            return Response.json(user);
         },
         "/api/register": {
             async POST(req) {
@@ -231,7 +252,7 @@ const server = serve({
                 const hash = await password.hash(payload.password);
 
                 const loginResult = db.query(statements.NEW_LOGIN_PASSWORD).run(hash);
-                const registerResult = db.query(statements.NEW_USER).run({ $name: payload.username, $login: loginResult.lastInsertRowid });
+                const registerResult = db.query(statements.NEW_USER).run({ $name: payload.username, $login: loginResult.lastInsertRowid,  });
 
                 const user = db.query(statements.GET_USER_INFO_BY_ID).get(registerResult.lastInsertRowid);
 
