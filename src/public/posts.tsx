@@ -1,12 +1,5 @@
 import { useState } from "react";
-
-export interface PostDetails {
-    id: number;
-    author_id: number | null;
-    author_name: string | null;
-    time: number;
-    content: string;
-}
+import type { PostView } from "../statements";
 
 export function NewPostForm({ thread, onPosted }: { thread: number, onPosted: () => void }) {
     const [content, setContent] = useState("");
@@ -31,7 +24,7 @@ export function NewPostForm({ thread, onPosted }: { thread: number, onPosted: ()
     );
 }
 
-export function PostList({ posts }: { posts: PostDetails[] }) {
+export function PostList({ posts }: { posts: PostView[] }) {
     return (
         <div className="post-list">
             {posts.map(post => <Post key={post.id} post={post} />)}
@@ -39,8 +32,8 @@ export function PostList({ posts }: { posts: PostDetails[] }) {
     );
 }
 
-export function Post({ post }: { post: PostDetails }) {
-    const timestamp = new Date(post.time * 1000).toLocaleDateString(navigator.language, {
+export function Post({ post }: { post: PostView }) {
+    const timestamp = new Date(post.time).toLocaleDateString(navigator.language, {
         year: "numeric",
         month: "long",
         day: "numeric",

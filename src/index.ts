@@ -1,13 +1,14 @@
 import { password, serve, SHA512 } from "bun";
-import crypto from "crypto";
-import { Database } from "bun:sqlite";
 import { migrate, migrations } from "bun-migrate";
+import { Database } from "bun:sqlite";
+import crypto from "crypto";
 import z from "zod";
 
-import home_index from "./public/home/index.html";
-import account_register from "./public/account/register/index.html";
 import account_login from "./public/account/login/index.html";
+import account_register from "./public/account/register/index.html";
+import home_index from "./public/home/index.html";
 import profile_index from "./public/profile/index.html";
+import * as statements from "./statements";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 
@@ -43,99 +44,19 @@ const userContentSchema = {
         bio: z.string().optional(),
     })
 };
-const statements = {
-    GET_VISIT_COUNT: "SELECT COUNT(time) AS visits FROM visits",
-    NEW_VISIT: "INSERT INTO visits(time) VALUES(CURRENT_TIMESTAMP)",
-    GET_POSTS: `
-        SELECT p.id,
-                UNIXEPOCH(p.time) AS time,
-                p.author AS author_id,
-                u.name AS author_name,
-                p.content
-        FROM posts p
-        LEFT JOIN users u ON p.author = u.id
-        ORDER BY time DESC
-        LIMIT 20
-    `,
-    GET_THREAD_POSTS: `
-        SELECT p.id,
-                UNIXEPOCH(p.time) AS time,
-                p.author AS author_id,
-                u.name AS author_name,
-                p.content
-        FROM posts p
-        LEFT JOIN users u ON p.author = u.id
-        WHERE p.thread = $thread
-        ORDER BY time DESC
-        LIMIT $limit
-    `,
-    NEW_ANONYMOUS_POST: `
-        INSERT INTO posts(time, content, thread)
-        VALUES(CURRENT_TIMESTAMP, $content, $thread)
-    `,
-    NEW_USER_POST: `
-        INSERT INTO posts(time, author, content, thread)
-        VALUES(CURRENT_TIMESTAMP, $author, $content, $thread)
-    `,
-    GET_POST_BY_ID: "SELECT * FROM posts WHERE id = ?",
-    NEW_LOGIN_PASSWORD: `
-        INSERT INTO logins(password)
-        VALUES(?)
-    `,
-    NEW_USER: `
-        INSERT INTO users(name, login)
-        VALUES($name, $login)
-    `,
-    GET_USER_INFO_BY_ID: "SELECT id, name, profile_thread, bio FROM users WHERE id = ?",
-    FIND_USER_LOGIN: "SELECT * FROM users WHERE name = ?",
-    GET_LOGIN_BY_ID: "SELECT * FROM logins WHERE id = ?",
-    NEW_SESSION: `
-        INSERT INTO sessions(token, user, expires_on)
-        VALUES($token, $user, $expires_on)
-    `,
-    DELETE_SESSION_BY_TOKEN: `
-        DELETE FROM sessions
-        WHERE token = ?
-    `,
-    FIND_USER_BY_TOKEN: `
-        SELECT s.token, u.*
-        FROM sessions s
-        JOIN users u ON s.user = u.id
-        WHERE s.token = ?
-    `,
-    FIND_USER_INFO_BY_TOKEN: `
-        SELECT id, name, profile_thread
-        FROM sessions s
-        JOIN users u ON s.user = u.id
-        WHERE s.token = ?
-    `,
-    USERNAME_TAKEN: `
-        SELECT 1
-        FROM users
-        WHERE name = ?
-    `,
-    NEW_THREAD: `
-        INSERT INTO threads(creation_time)
-        VALUES(CURRENT_TIMESTAMP)
-    `,
-    SET_USER_BIO: `
-        UPDATE users
-        SET bio = $bio
-        WHERE id = $id
-    `
-}
 
-function createSession(db: Database, user: any) {
+function createSessionForUser(db: Database, userId: number) {
     const token = crypto.getRandomValues(new Uint8Array(128)).toBase64();
     const tokenHash = SHA512.hash(token, "base64");
     const expireDate = new Date();
     expireDate.setDate(expireDate.getDate() + 3);
-    db.prepare(statements.NEW_SESSION).run({ $token: tokenHash, $user: user.id, $expires_on: expireDate.toISOString() });
+
+    statements.createSession.run(db, { $token: tokenHash, $user: userId, $expires_on: expireDate.toISOString() });
 
     return { token, expireDate };
 }
 
-const server = serve({
+const server: Bun.Server<{ user: number | null }> = serve({
     development: developmentEnabled,
     routes: {
         "/": home_index,
@@ -148,7 +69,7 @@ const server = serve({
 
             const token = req.cookies.get("token");
             if(token != null) {
-                db.prepare(statements.DELETE_SESSION_BY_TOKEN).run(SHA512.hash(token, "base64"));
+                statements.deleteSession.run(db, SHA512.hash(token, "base64"));
             }
 
             req.cookies.delete("token");
@@ -158,21 +79,22 @@ const server = serve({
         "/api/visit": {
             async GET() {
                 using db = getDb();
-                return Response.json(db.query(statements.GET_VISIT_COUNT).get());
+                return Response.json(statements.getVisitCount.get(db));
             },
             async POST() {
                 using db = getDb();
-                db.run(statements.NEW_VISIT);
+                statements.createVisit.run(db, new Date().toISOString());
 
-                return Response.json(db.query(statements.GET_VISIT_COUNT).get());
+                return Response.json(statements.getVisitCount.get(db));
             }
         },
         "/api/thread/:threadId": {
             async GET(req) {
                 using db = getDb();
 
-                const select = db.query(statements.GET_THREAD_POSTS);
-                return Response.json(select.all({ $thread: req.params.threadId, $limit: 20 }));
+                const posts = statements.findPostsInThread.all(db, {
+                    $thread: +req.params.threadId, $limit: 20 });
+                return Response.json(posts);
             },
             async POST(req) {
                 const rawData = await req.json();
@@ -186,36 +108,35 @@ const server = serve({
                 using db = getDb();
 
                 const token = req.cookies.get("token");
-                let user: any;
-                if(token != null) {
-                    user = db.query(statements.FIND_USER_BY_TOKEN).get(SHA512.hash(token, "base64"));
-                }
+                const user: statements.UserView | null = token == null ? null : statements.findUserByToken.get(db, SHA512.hash(token, "base64"));
 
-                const postResult = user == null
-                    ? db.prepare(statements.NEW_ANONYMOUS_POST).run({ $content: payload.content, $thread: req.params.threadId })
-                    : db.prepare(statements.NEW_USER_POST).run({ $content: payload.content, $author: user.id, $thread: req.params.threadId });
+                const postResult = statements.createPost.run(db, {
+                    $time: new Date().toISOString(),
+                    $author: user?.id ?? null,
+                    $content: payload.content,
+                    $thread: +req.params.threadId
+                });
 
-                const post = db.query(statements.GET_POST_BY_ID).get(postResult.lastInsertRowid);
+                const post = statements.findPostById.get(db, postResult.lastInsertRowid as number);
                 
                 return Response.json(post);
             }
         },
         "/api/user/me": async req => {
-            using db = getDb();
-
             const token = req.cookies.get("token");
             
             if(token == null) {
                 return Response.json(null);
             }
             
-            const user = db.query(statements.FIND_USER_INFO_BY_TOKEN).get(SHA512.hash(token, "base64"));
+            using db = getDb();
+            const user = statements.findUserByToken.get(db, SHA512.hash(token, "base64"));
             return Response.json(user);
         },
         "/api/user/:id": {
             async GET(req) {
                 using db = getDb();
-                const user = db.query(statements.GET_USER_INFO_BY_ID).get(req.params.id);
+                const user = statements.findUserById.get(db, +req.params.id);
 
                 if(user == null) return Response.json(null, { status: 404 });
                 return Response.json(user);
@@ -232,17 +153,14 @@ const server = serve({
                 using db = getDb();
 
                 const token = req.cookies.get("token");
-                let user: any;
-                if(token != null) {
-                    user = db.query(statements.FIND_USER_BY_TOKEN).get(SHA512.hash(token, "base64"));
-                }
+                const user: statements.UserView | null = token == null ? null : statements.findUserByToken.get(db, SHA512.hash(token, "base64"));
 
-                if(user?.id != req.params.id) {
+                if(user?.id.toString() != req.params.id) {
                     return new Response("Forbidden", { status: 403 });
                 }
 
                 if(payload.bio != null) {
-                    db.prepare(statements.SET_USER_BIO).run({ $id: req.params.id, $bio: payload.bio });
+                    statements.setUserBio.run(db, { $id: +req.params.id, $bio: payload.bio });
                 }
 
                 return new Response();
@@ -280,7 +198,7 @@ const server = serve({
 
                 using db = getDb();
 
-                if(db.query(statements.USERNAME_TAKEN).get(payload.username)) {
+                if(statements.isUsernameTaken.get(db, payload.username)) {
                     return Response.json(
                         { error: "username_taken" },
                         { status: 400 }
@@ -289,12 +207,19 @@ const server = serve({
 
                 const hash = await password.hash(payload.password);
 
-                const loginResult = db.query(statements.NEW_LOGIN_PASSWORD).run(hash);
-                const registerResult = db.query(statements.NEW_USER).run({ $name: payload.username, $login: loginResult.lastInsertRowid,  });
+                const loginResult = statements.createPasswordLogin.run(db, {
+                    $hash: hash,
+                    $creation_time: new Date().toISOString()
+                });
+                const registerResult = statements.createUser.run(db, {
+                    $name: payload.username,
+                    $login: loginResult.lastInsertRowid as number,
+                    $creation_time: new Date().toISOString()
+                });
 
-                const user = db.query(statements.GET_USER_INFO_BY_ID).get(registerResult.lastInsertRowid);
+                const user = statements.findUserById.get(db, registerResult.lastInsertRowid as number)!;
 
-                const session = createSession(db, user);
+                const session = createSessionForUser(db, user.id);
                 req.cookies.set("token", session.token, { expires: session.expireDate });
 
                 return Response.json(user);
@@ -311,14 +236,13 @@ const server = serve({
                 }
 
                 using db = getDb();
-                const user: any = db.query(statements.FIND_USER_LOGIN).get(payload.username);
-                if(user == null) {
+                const login = statements.findLoginByUserName.get(db, payload.username);
+                if(login == null) {
                     return Response.json(
                         { error: "unknown_user" },
                         { status: 404 }
                     );
                 }
-                const login: any = db.query(statements.GET_LOGIN_BY_ID).get(user.login);
 
                 if(login.password != null) {
                     const success = await password.verify(payload.password, login.password);
@@ -336,7 +260,7 @@ const server = serve({
                     );
                 }
 
-                const session = createSession(db, user);
+                const session = createSessionForUser(db, login.user_id);
                 req.cookies.set("token", session.token, { expires: session.expireDate });
 
                 return Response.json({ token: session.token });

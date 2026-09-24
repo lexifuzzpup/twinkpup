@@ -1,11 +1,6 @@
-export interface UserDetails {
-    id: number;
-    name: string;
-    profile_thread: number;
-    bio?: string;
-}
+import type { PublicUserView } from "../statements";
 
-export function PostingAsBanner({ user }: { user: UserDetails | null }) {
+export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
     return (
         <div className="account-notice" style={{ color: "#f0f" }}>
             { user == null

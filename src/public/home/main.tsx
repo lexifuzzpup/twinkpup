@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { NewPostForm, Post, PostList, type PostDetails } from "../posts";
-import { PostingAsBanner, type UserDetails } from "../user";
+import type { PostView, PublicUserView } from "../../statements";
+import { NewPostForm, PostList } from "../posts";
+import { PostingAsBanner } from "../user";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
     const [visits, setVisits] = useState<number | null>(null);
-    const [posts, setPosts] = useState<PostDetails[]>([]);
+    const [posts, setPosts] = useState<PostView[]>([]);
     const [meFetched, setMeFetched] = useState<boolean>(false);
-    const [me, setMe] = useState<UserDetails | null>(null);
+    const [me, setMe] = useState<PublicUserView | null>(null);
 
     async function reloadVisitCounter() {
         const request = await fetch("/api/visit");

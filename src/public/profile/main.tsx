@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { NewPostForm, Post, PostList, type PostDetails } from "../posts";
-import { PostingAsBanner, type UserDetails } from "../user";
+import { NewPostForm, Post, PostList } from "../posts";
+import { PostingAsBanner } from "../user";
+import type { PostView, PublicUserView } from "../../statements";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
     const [meFetched, setMeFetched] = useState<boolean>(false);
-    const [me, setMe] = useState<UserDetails | null>(null);
-    const [viewingUser, setViewingUser] = useState<UserDetails | null>(null);
+    const [me, setMe] = useState<PublicUserView | null>(null);
+    const [viewingUser, setViewingUser] = useState<PublicUserView | null>(null);
 
     const userId = document.location.pathname.split("/").pop();
 
@@ -47,8 +48,8 @@ function Home() {
     )
 }
 
-function Profile({ me, user }: { me: UserDetails | null, user: UserDetails }) {
-    const [posts, setPosts] = useState<PostDetails[]>([]);
+function Profile({ me, user }: { me: PublicUserView | null, user: PublicUserView }) {
+    const [posts, setPosts] = useState<PostView[]>([]);
     const [editingBio, setEditingBio] = useState<boolean>(false);
 
     async function reloadPosts() {
