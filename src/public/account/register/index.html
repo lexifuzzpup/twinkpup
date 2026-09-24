@@ -7,35 +7,9 @@
 
     <link rel="stylesheet" href="./style.css">
 
-    <script type="module" src="./main.ts"></script>
+    <script type="module" src="./main.tsx"></script>
 </head>
 <body>
-    <div class="background"></div>
-
-    <a href="/" style="font-size: 2rem;">return home</a>
-
-    <fieldset style="width: 24rem;">
-        <legend style="font-size: 2rem;">new account</legend>
-        <a href="/account/login">log into an existing one instead?</a>
-        <form id="register">
-            <section id="account-username">
-                <label for="account-username">Username</label>
-                <span class="error"></span>
-                <input type="text" required name="username" autocomplete="username">
-            </section>
-            <section id="account-password">
-                <label for="account-password">Password</label>
-                <span class="error"></span>
-                <input type="password" required name="password" autocomplete="new-password">
-            </section>
-            <section id="account-password-confirm">
-                <label for="account-password-confirm">Confirm Password</label>
-                <span class="error"></span>
-                <input type="password" required name="password-confirm" autocomplete="new-password">
-            </section>
-
-            <input type="submit" value="register!">
-        </form>
-    </fieldset>
+    <div id="root"></div>
 </body>
 </html>

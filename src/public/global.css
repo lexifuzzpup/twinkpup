@@ -58,6 +58,14 @@ form {
     }
 }
 
+.aware {
+    font-size: 1.5em;
+}
+
+.super-aware {
+    font-size: 2em;
+}
+
 .error {
     color: #f00;
     font-style: italic;
