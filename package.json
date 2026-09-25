@@ -3,6 +3,10 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "docker compose -f docker-compose.dev.yml up --build --no-deps --force-recreate",
+    "stage": "docker compose -f docker-compose.stage.yml up --build --no-deps --force-recreate"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/react": "^19.3.0",

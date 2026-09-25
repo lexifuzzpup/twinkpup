@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.prod
+      network: host
+    environment:
+      SQLITE_DB_FILE: "/data/db.sqlite"
+    volumes:
+      - ./run/stage:/data
+    ports:
+      - 3000:3000
+    security_opt:
+      - apparmor:unconfined

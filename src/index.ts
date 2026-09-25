@@ -9,11 +9,18 @@ import account_register from "./public/account/register/index.html";
 import home_index from "./public/home/index.html";
 import profile_index from "./public/profile/index.html";
 import * as statements from "./statements";
+import { mkdirSync } from "fs";
+import path from "path";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
+const dbLocation = process.env.SQLITE_DB_FILE;
+
+if(dbLocation == null) throw new Error("SQLITE_DB_FILE is not set");
+
+mkdirSync(path.dirname(dbLocation), { recursive: true });
 
 function getDb() {
-    const db = new Database("/usr/db/mydb.sqlite", {
+    const db = new Database(dbLocation, {
         create: true
     });
     db.run("PRAGMA foreign_keys = ON");
