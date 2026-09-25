@@ -33,10 +33,8 @@ function Home() {
     }
 
     useEffect(() => {
-        Promise.all([
-            reloadMe(),
-            reloadViewingUser()
-        ]);
+        reloadMe();
+        reloadViewingUser();
     }, []);
 
     return (
@@ -62,9 +60,7 @@ function Profile({ me, user }: { me: PublicUserView | null, user: PublicUserView
     }
 
     useEffect(() => {
-        Promise.all([
-            reloadPosts()
-        ]);
+        reloadPosts();
 
         const interval = setInterval(() => {
             reloadPosts();

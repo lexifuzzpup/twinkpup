@@ -42,13 +42,9 @@ function Home() {
     }
 
     useEffect(() => {
-        (async () => {
-            await fetch("/api/visit", { method: "POST" });
-
-            await reloadVisitCounter();
-            await reloadPosts();
-            await reloadMe();
-        })();
+        fetch("/api/visit", { method: "POST" }).then(() => reloadVisitCounter());
+        reloadPosts();
+        reloadMe();
 
         const interval = setInterval(() => {
             reloadVisitCounter();
