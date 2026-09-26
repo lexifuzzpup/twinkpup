@@ -378,4 +378,13 @@ const server: Bun.Server<WebSocketData> = serve({
     }
 });
 
+
+async function shutdown(signal: string) {
+    console.log("Received " + signal + "; stopping server...");
+    await server.stop();
+    process.exit(0);
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 console.log(`Server running at ${server.url}`);
