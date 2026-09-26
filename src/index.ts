@@ -16,9 +16,7 @@ import { WebSocketRoute, type WebSocketData } from "./websockets";
 import { BSON } from "bson";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
-const dbLocation = process.env.SQLITE_DB_FILE;
-
-if(dbLocation == null) throw new Error("SQLITE_DB_FILE is not set");
+const dbLocation = process.env.SQLITE_DB_FILE ?? "/data/db.sqlite";
 
 mkdirSync(path.dirname(dbLocation), { recursive: true });
 

@@ -3,8 +3,6 @@ services:
     build:
       dockerfile: Dockerfile.prod
       network: host
-    environment:
-      SQLITE_DB_FILE: "/data/db.sqlite"
     volumes:
       - ./run/stage:/data
     ports:
