@@ -6,6 +6,7 @@ import ScrollToBottom from "react-scroll-to-bottom";
 import { BSON } from "bson";
 import z from "zod";
 import { Topbar } from "../topbar";
+import { MessageFlag, MessageType } from "../../thehole";
 
 // https://github.com/oven-sh/bun/issues/3138#issuecomment-3429287309
 const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
@@ -72,25 +73,48 @@ interface Message {
     author: PublicUserView | null;
     text: string;
     time: Date;
+    flag: MessageFlag;
 }
 
 const messageSchema = z.union([
     z.object({
-        type: z.literal("message"),
+        type: z.literal(MessageType.NEW_MESSAGE),
         author: z.number().nullable(),
         text: z.string(),
-        time: z.int()
+        time: z.int(),
+        flag: z.enum(MessageFlag)
     }),
     z.object({
-        type: z.literal("user-join"),
+        type: z.literal(MessageType.USER_CONNECT),
         user: z.number().nullable(),
         id: z.string()
     }),
     z.object({
-        type: z.literal("user-leave"),
+        type: z.literal(MessageType.USER_DISCONNECT),
         id: z.string()
     })
 ]);
+
+function AuthorCard({ user }: { user: PublicUserView | null }) {
+    return user == null
+        ? <span className="author" style={{ fontStyle: "italic" }}>anonymous</span>
+        : <span className="author">
+            <a href={"/profile/" + user.id} target="_blank">{user.name}</a>
+          </span>
+}
+function Timestamp({ date }: { date: Date }) {
+    return (
+        <>{
+            date.toLocaleDateString(navigator.language, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            })
+        }</>
+    )
+}
 
 function HoleChat() {
     const { sendMessage, lastMessage, readyState } = useWebSocket("/thehole/ws");
@@ -105,22 +129,23 @@ function HoleChat() {
                 const parsed = messageSchema.parse(deserialized);
 
                 switch(parsed.type) {
-                    case "message": {
+                    case MessageType.NEW_MESSAGE: {
                         const author = await getUser(parsed.author);
                         setMessageHistory(prev => prev.concat({
                             text: parsed.text,
                             time: new Date(parsed.time),
+                            flag: parsed.flag,
                             author
                         }));
                     } break;
-                    case "user-join": {
+                    case MessageType.USER_CONNECT: {
                         const user = await getUser(parsed.user);
                         setMembers(prev => prev.concat({
                             id: parsed.id,
                             user
                         }));
                     } break;
-                    case "user-leave": {
+                    case MessageType.USER_DISCONNECT: {
                         setMembers(prev => prev.filter(member => member.id != parsed.id));
                     } break;
                 }
@@ -128,28 +153,36 @@ function HoleChat() {
         }
     }, [ lastMessage ]);
 
+    const classNames = {
+        [ MessageFlag.USER_MESSAGE ]: "user-message",
+        [ MessageFlag.USER_JOIN ]: "user-join",
+        [ MessageFlag.USER_LEAVE ]: "user-leave"
+    };
+
     return (
         <div className="hole-chat">
             <fieldset className="chat">
                 <legend>chat</legend>
                 <ScrollToBottom className="history">
                     {messageHistory.map((message, i) => (
-                        <li key={i}>
-                            {
-                                message.author == null
-                                ? <span className="author" style={{ fontStyle: "italic" }}>anonymous</span>
-                                : <span className="author">
-                                    <a href={"/profile/" + message.author.id} target="_blank">{message.author.name}</a>
-                                  </span>
-                            }
-                            <span className="time">{message.time.toLocaleDateString(navigator.language, {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit"
-                            })}</span>
-                            <code>{message.text}</code>
+                        <li key={i} className={"message " + classNames[message.flag]}>
+                            {message.flag == MessageFlag.USER_MESSAGE && <>
+                                <AuthorCard user={message.author} />
+                                <span className="time"><Timestamp date={message.time} /></span>
+                                <code>{message.text}</code>
+                            </>}
+                            {message.flag == MessageFlag.USER_JOIN && <>
+                                <span className="content">
+                                    <AuthorCard user={message.author} /> entered the hole !!
+                                </span>
+                                <span className="time"><Timestamp date={message.time} /></span>
+                            </>}
+                            {message.flag == MessageFlag.USER_LEAVE && <>
+                                <span className="content">
+                                    <AuthorCard user={message.author} /> left the hole...
+                                </span>
+                                <span className="time"><Timestamp date={message.time} /></span>
+                            </>}
                         </li>
                     ))}
                 </ScrollToBottom>

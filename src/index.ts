@@ -14,6 +14,7 @@ import profile_index from "./public/profile/index.html";
 import * as statements from "./statements";
 import { WebSocketRoute, type WebSocketData } from "./websockets";
 import { BSON } from "bson";
+import { MessageFlag, MessageType } from "./thehole";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 const dbLocation = process.env.SQLITE_DB_FILE ?? "/data/db.sqlite";
@@ -64,14 +65,24 @@ const theHoleRoute = new class extends WebSocketRoute {
         super.open(ws);
 
         this.broadcast(BSON.serialize({
-            type: "user-join",
+            type: MessageType.USER_CONNECT,
             id: ws.data.id,
             user: ws.data.user
         }), false, otherWs => otherWs != ws);
 
+        if(ws.data.user != null) {
+            this.broadcast(BSON.serialize({
+                type: MessageType.NEW_MESSAGE,
+                author: ws.data.user,
+                text: "",
+                time: new Date().getTime(),
+                flag: MessageFlag.USER_JOIN
+            }));
+        }
+
         for(const otherWs of this.getAll()) {
             ws.send(BSON.serialize({
-                type: "user-join",
+                type: MessageType.USER_CONNECT,
                 id: otherWs.data.id,
                 user: otherWs.data.user
             }));
@@ -81,9 +92,19 @@ const theHoleRoute = new class extends WebSocketRoute {
         super.close(ws, code, reason);
 
         this.broadcast(BSON.serialize({
-            type: "user-leave",
+            type: MessageType.USER_DISCONNECT,
             id: ws.data.id,
         }));
+
+        if(ws.data.user != null) {
+            this.broadcast(BSON.serialize({
+                type: MessageType.NEW_MESSAGE,
+                author: ws.data.user,
+                text: "",
+                time: new Date().getTime(),
+                flag: MessageFlag.USER_LEAVE
+            }));
+        }
     }
     public override message(ws: ServerWebSocket<WebSocketData>, message: string | Buffer<ArrayBuffer>): void {
         super.message(ws, message);
@@ -94,10 +115,11 @@ const theHoleRoute = new class extends WebSocketRoute {
         switch(parsed.type) {
             case "message": {
                 this.broadcast(BSON.serialize({
-                    type: "message",
+                    type: MessageType.NEW_MESSAGE,
                     author: ws.data.user,
                     text: parsed.text,
-                    time: new Date().getTime()
+                    time: new Date().getTime(),
+                    flag: MessageFlag.USER_MESSAGE
                 }));
             } break;
         }
