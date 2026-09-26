@@ -69,9 +69,14 @@ body {
                 }
                 & > .time {
                     grid-area: 1 / 2 / 2 / 3;
+                    font-size: 0.75em;
                 }
                 & > code {
                     grid-area: 2 / 1 / 3 / 3;
+                }
+
+                &:hover {
+                    background: #f0f2;
                 }
             }
         }
