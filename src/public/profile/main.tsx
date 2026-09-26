@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { NewPostForm, Post, PostList } from "../posts";
 import { PostingAsBanner } from "../user";
 import type { PostView, PublicUserView } from "../../statements";
+import { Topbar } from "../topbar";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
@@ -40,7 +41,7 @@ function Home() {
     return (
         <>
             <div className="background"></div>
-            <a href="/" className="super-aware">return home</a>
+            <Topbar />
             { viewingUser && meFetched && <Profile me={me} user={viewingUser} /> }
         </>
     )

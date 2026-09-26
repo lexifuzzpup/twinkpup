@@ -1,16 +1,19 @@
-import { password, serve, SHA512 } from "bun";
+import { password, serve, SHA512, type ServerWebSocket } from "bun";
 import { migrate, migrations } from "bun-migrate";
 import { Database } from "bun:sqlite";
 import crypto from "crypto";
 import z from "zod";
 
+import { mkdirSync } from "fs";
+import path from "path";
 import account_login from "./public/account/login/index.html";
 import account_register from "./public/account/register/index.html";
+import hole_index from "./public/hole/index.html";
 import home_index from "./public/home/index.html";
 import profile_index from "./public/profile/index.html";
 import * as statements from "./statements";
-import { mkdirSync } from "fs";
-import path from "path";
+import { WebSocketRoute, type WebSocketData } from "./websockets";
+import { BSON } from "bson";
 
 const developmentEnabled = process.env.NODE_ENV?.toLowerCase() == "development";
 const dbLocation = process.env.SQLITE_DB_FILE;
@@ -36,7 +39,7 @@ await migrate(migrationDb, {
 
 const userContentSchema = {
     NEW_POST: z.object({
-        content: z.string().nonempty()
+        content: z.string().trim().nonempty().max(1000)
     }),
     NEW_USER: z.object({
         username: z.string().nonempty(),
@@ -48,9 +51,60 @@ const userContentSchema = {
     }),
     PATCH_USER: z.object({
         // username: z.string().optional(),
-        bio: z.string().optional(),
-    })
+        bio: z.string().max(4000).optional(),
+    }),
+    THE_HOLE_MESSAGE: z.union([
+        z.object({
+            type: z.literal("message"),
+            text: z.string().trim().nonempty().max(1000)
+        })
+    ])
 };
+
+const theHoleRoute = new class extends WebSocketRoute {
+    public override open(ws: ServerWebSocket<WebSocketData>): void {
+        super.open(ws);
+
+        this.broadcast(BSON.serialize({
+            type: "user-join",
+            id: ws.data.id,
+            user: ws.data.user
+        }), false, otherWs => otherWs != ws);
+
+        for(const otherWs of this.getAll()) {
+            ws.send(BSON.serialize({
+                type: "user-join",
+                id: otherWs.data.id,
+                user: otherWs.data.user
+            }));
+        }
+    }
+    public override close(ws: ServerWebSocket<WebSocketData>, code: number, reason: string): void {
+        super.close(ws, code, reason);
+
+        this.broadcast(BSON.serialize({
+            type: "user-leave",
+            id: ws.data.id,
+        }));
+    }
+    public override message(ws: ServerWebSocket<WebSocketData>, message: string | Buffer<ArrayBuffer>): void {
+        super.message(ws, message);
+
+        const deserialized = BSON.deserialize(message as Buffer);
+        const parsed = userContentSchema.THE_HOLE_MESSAGE.parse(deserialized);
+
+        switch(parsed.type) {
+            case "message": {
+                this.broadcast(BSON.serialize({
+                    type: "message",
+                    author: ws.data.user,
+                    text: parsed.text,
+                    time: new Date().getTime()
+                }));
+            } break;
+        }
+    }
+}
 
 function createSessionForUser(db: Database, userId: number) {
     const token = crypto.getRandomValues(new Uint8Array(128)).toBase64();
@@ -63,13 +117,14 @@ function createSessionForUser(db: Database, userId: number) {
     return { token, expireDate };
 }
 
-const server: Bun.Server<{ user: number | null }> = serve({
+const server: Bun.Server<WebSocketData> = serve({
     development: developmentEnabled,
     routes: {
         "/": home_index,
         "/account/register": account_register,
         "/account/login": account_login,
         "/profile/:userId": profile_index,
+        "/thehole": hole_index,
 
         "/account/logout": async req => {
             using db = getDb();
@@ -272,8 +327,35 @@ const server: Bun.Server<{ user: number | null }> = serve({
 
                 return Response.json({ token: session.token });
             }
+        },
+
+        "/thehole/ws": async req => {
+            using db = getDb();
+
+            const token = req.cookies.get("token");
+            const user: statements.UserView | null = token == null ? null : statements.findUserByToken.get(db, SHA512.hash(token, "base64"));
+
+            const data = {
+                user: user?.id ?? null,
+                req: req,
+                router: theHoleRoute
+            };
+            if(!server.upgrade(req, { data })) {
+                return new Response("Upgrade failed", { status: 500 });
+            }
+        }
+    },
+    websocket: {
+        message(ws, message) {
+            ws.data.router.message(<any>ws, message);
+        },
+        open(ws) {
+            ws.data.router.open(<any>ws);
+        },
+        close(ws, code, reason) {
+            ws.data.router.close(<any>ws, code, reason);
         }
     }
-})
+});
 
 console.log(`Server running at ${server.url}`);

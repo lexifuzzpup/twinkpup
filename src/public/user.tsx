@@ -10,7 +10,7 @@ export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
                     <a href="/account/login">log in</a> or <a href="/account/register">create account</a>
                 </>
                 : <>
-                    you are logged in as <span className="aware">{user.name}</span> !!
+                    you are logged in as <a href={"/profile/" + user.id} className="aware" target="_blank">{user.name}</a> !!
                     (or <a href="/account/logout">log out</a>)
                 </>
             }

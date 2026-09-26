@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Field } from "../field.tsx";
+import { Topbar } from "../../topbar.tsx";
 
 createRoot(document.querySelector("#root")!).render(<Login />);
 
@@ -13,7 +14,7 @@ function Login() {
         <>
             <div className="background"></div>
 
-            <a href="/" className="super-aware">return home</a>
+            <Topbar />
 
             <fieldset style={{ width: "24rem" }}>
                 <legend className="super-aware">log into existing account</legend>

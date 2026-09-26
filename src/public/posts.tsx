@@ -8,12 +8,14 @@ export function NewPostForm({ thread, onPosted }: { thread: number, onPosted: ()
         <form className="new-post" onSubmit={async event => {
             event.preventDefault();
 
-            const body = JSON.stringify({ content });
-            setContent("");
+            if(content.trim().length > 0) {
+                const body = JSON.stringify({ content });
+                setContent("");
 
-            const request = await fetch("/api/thread/" + thread, { method: "POST", body });
-            if(request.ok) {
-                onPosted();
+                const request = await fetch("/api/thread/" + thread, { method: "POST", body });
+                if(request.ok) {
+                    onPosted();
+                }
             }
         }}>
             <textarea required name="content" rows={16} cols={64} style={{ display: "block" }} maxLength={1000} autoComplete="off"
@@ -45,9 +47,10 @@ export function Post({ post }: { post: PostView }) {
         <fieldset className="post">
             {post.author_name == null
                 ? <legend className="author" style={{ fontStyle: "oblique" }}>Anonymous</legend>
-                : <legend className="author"><a href={"/profile/" + post.author_id}>{post.author_name}</a></legend>}
+                : <legend className="author"><a href={"/profile/" + post.author_id} target="_blank">{post.author_name}</a></legend>}
             <span className="timestamp">{timestamp}</span>
             <code>{post.content}</code>
         </fieldset>
     );
 }
+    

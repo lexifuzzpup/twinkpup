@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import type { PostView, PublicUserView } from "../../statements";
 import { NewPostForm, PostList } from "../posts";
 import { PostingAsBanner } from "../user";
+import { Topbar } from "../topbar";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
@@ -57,6 +58,8 @@ function Home() {
     return (
         <>
             <div className="background"></div>
+            <Topbar />
+
             <span className="aware">
                 this site has been visited <span className="aware">{visits ?? "..."}</span> time(s) !!
             </span>
