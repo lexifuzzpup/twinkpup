@@ -1,48 +1,34 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { NewPostForm, Post, PostList } from "../posts";
-import { PostingAsBanner } from "../user";
+import { PublicUserView, type PostView } from "../../schema";
+import { NewPostForm, PostList } from "../posts";
 import { Topbar } from "../topbar";
-import type { PostView, PublicUserView } from "../../database";
+import { PostingAsBanner } from "../user";
+import { useNetworkJsonResource } from "../network";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
-function Home() {
-    const [meFetched, setMeFetched] = useState<boolean>(false);
-    const [me, setMe] = useState<PublicUserView | null>(null);
-    const [viewingUser, setViewingUser] = useState<PublicUserView | null>(null);
-
+function Home() {    
     const userId = document.location.pathname.split("/").pop();
 
-    async function reloadMe() {
-        const request = await fetch("/api/user/me");
-        if(request.ok) {
-            setMe(await request.json());
-            setMeFetched(true);
-        } else {
-            console.error("Failed to load account notice");
-        }
-    }
-
-    async function reloadViewingUser() {
-        const request = await fetch("/api/user/" + userId);
-        if(request.ok) {
-            setViewingUser(await request.json());
-        } else {
-            console.error("Failed to load viewing account");
-        }
-    }
-
-    useEffect(() => {
-        reloadMe();
-        reloadViewingUser();
-    }, []);
+    const me = useNetworkJsonResource({
+        url: "/api/user/me",
+        schema: PublicUserView.nullable(),
+        maxAttempts: 3,
+        retryInterval: attempt => attempt * 500
+    });
+    const viewingUser = userId && useNetworkJsonResource({
+        url: "/api/user/" + userId,
+        schema: PublicUserView,
+        maxAttempts: 3,
+        retryInterval: attempt => attempt * 500
+    });
 
     return (
         <>
             <div className="background"></div>
             <Topbar />
-            { viewingUser && meFetched && <Profile me={me} user={viewingUser} /> }
+            { viewingUser && me.loaded && viewingUser.loaded && <Profile me={me.result} user={viewingUser.result} /> }
         </>
     )
 }

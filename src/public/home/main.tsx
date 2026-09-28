@@ -3,53 +3,35 @@ import { createRoot } from "react-dom/client";
 import { NewPostForm, PostList } from "../posts";
 import { PostingAsBanner } from "../user";
 import { Topbar } from "../topbar";
-import type { PostView, PublicUserView } from "../../database";
+import { PostView, PublicUserView } from "../../schema";
+import { useNetworkJsonResource } from "../network";
+import z from "zod";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
-    const [visits, setVisits] = useState<number | null>(null);
-    const [posts, setPosts] = useState<PostView[]>([]);
-    const [meFetched, setMeFetched] = useState<boolean>(false);
-    const [me, setMe] = useState<PublicUserView | null>(null);
-
-    async function reloadVisitCounter() {
-        const request = await fetch("/api/visit");
-        if(request.ok) {
-            const response = await request.json();
-            setVisits(response.visits);
-        } else {
-            console.error("Failed to load visit counter");
-        }
-    }
-
-    async function reloadPosts() {
-        const request = await fetch("/api/thread/1");
-        if(request.ok) {
-            setPosts(await request.json());
-        } else {
-            console.error("Failed to load recent posts");
-        }
-    }
-
-    async function reloadMe() {
-        const request = await fetch("/api/user/me");
-        if(request.ok || request.status == 401) {
-            setMe(await request.json());
-            setMeFetched(true);
-        } else {
-            console.error("Failed to load account notice");
-        }
-    }
+    const visits = useNetworkJsonResource({
+        url: "/api/visit",
+        schema: z.object({ visits: z.int() }),
+        fetchImmediately: false
+    });
+    const posts = useNetworkJsonResource({
+        url: "/api/thread/1",
+        schema: PostView.array()
+    });
+    const me = useNetworkJsonResource({
+        url: "/api/user/me",
+        schema: PublicUserView.nullable(),
+        maxAttempts: 3,
+        retryInterval: attempt => attempt * 500
+    });
 
     useEffect(() => {
-        fetch("/api/visit", { method: "POST" }).then(() => reloadVisitCounter());
-        reloadPosts();
-        reloadMe();
+        fetch("/api/visit", { method: "POST" }).then(() => visits.reload());
 
         const interval = setInterval(() => {
-            reloadVisitCounter();
-            reloadPosts();
+            visits.reload();
+            posts.reload();
         }, 10 * 1000);
 
         return () => clearInterval(interval);
@@ -61,19 +43,19 @@ function Home() {
             <Topbar />
 
             <span className="aware">
-                this site has been visited <span className="aware">{visits ?? "..."}</span> time(s) !!
+                this site has been visited <span className="aware">{visits.result?.visits ?? "..."}</span> time(s) !!
             </span>
 
             <fieldset>
                 <legend className="super-aware">new post</legend>
-                { meFetched && <PostingAsBanner user={me} /> }
-                <NewPostForm thread={1} onPosted={reloadPosts} />
+                { me.loaded && <PostingAsBanner user={me.result} /> }
+                <NewPostForm thread={1} onPosted={posts.reload} />
             </fieldset>
 
             <fieldset>
                 <legend className="super-aware">recent posts</legend>
 
-                <PostList posts={posts} />
+                { posts.loaded && <PostList posts={posts.result} /> }
             </fieldset>
         </>
     );

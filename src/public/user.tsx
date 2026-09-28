@@ -1,4 +1,5 @@
-import type { PublicUserView } from "../database";
+import { PublicUserView } from "../schema";
+import { useNetworkJsonResource } from "./network";
 
 export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
     return (

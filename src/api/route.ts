@@ -2,7 +2,8 @@ import { password as bunPassword } from "bun";
 import Elysia from "elysia";
 import z from "zod";
 import auth from "../auth";
-import { PublicUserView, Repository } from "../database";
+import { Repository } from "../database";
+import { PublicUserView } from "../schema";
 
 const future = {
     inDays(days: number) {

@@ -1,12 +1,10 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import useWebSocket_ from "react-use-websocket";
 import ScrollToBottom from "react-scroll-to-bottom";
-import { BSON } from "bson";
-import z from "zod";
-import { Topbar } from "../topbar";
+import useWebSocket_ from "react-use-websocket";
+import { PublicUserView } from "../../schema";
 import { ClientBoundMessage, MessageFlag, MessageType } from "../../thehole/schema";
-import type { PublicUserView } from "../../database";
+import { Topbar } from "../topbar";
 
 // https://github.com/oven-sh/bun/issues/3138#issuecomment-3429287309
 const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
@@ -14,23 +12,6 @@ const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
-    const [meFetched, setMeFetched] = useState<boolean>(false);
-    const [me, setMe] = useState<PublicUserView | null>(null);
-
-    async function reloadMe() {
-        const request = await fetch("/api/user/me");
-        if(request.ok) {
-            setMe(await request.json());
-            setMeFetched(true);
-        } else {
-            console.error("Failed to load account notice");
-        }
-    }
-
-    useEffect(() => {
-        reloadMe();
-    }, []);
-
     return (
         <>
             <div className="background"></div>

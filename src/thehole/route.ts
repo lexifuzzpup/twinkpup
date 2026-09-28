@@ -2,7 +2,8 @@ import Elysia from "elysia";
 import z from "zod";
 import { ClientBoundMessage, MessageFlag, MessageType, ServerBoundMessage } from "./schema";
 import auth from "../auth";
-import type { Repository, UserView } from "../database";
+import type { Repository } from "../database";
+import type { UserView } from "../schema";
 
 interface HoleSocket {
     id: string;
@@ -29,11 +30,6 @@ export default (repo: Repository) => new Elysia({ name: "thehole" })
         body: ServerBoundMessage,
         response: ClientBoundMessage,
         optionalAuth: true,
-        beforeHandle({ cookie, user }) {
-            const data = {
-                user: user?.id ?? null
-            };
-        },
         open(ws) {
             ws.subscribe("thehole");
             sockets.set(ws.id, ws);
