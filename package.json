@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "docker compose -f docker-compose.dev.yml up --build --no-deps --force-recreate",
-    "stage": "docker compose -f docker-compose.stage.yml up --build --no-deps --force-recreate",
+    "stage": "rm run/stage -r && mkdir run/stage -p && docker compose -f docker-compose.stage.yml up --build --no-deps --force-recreate",
     "publish-prod": "./publish.sh latest",
     "publish-preview": "./publish.sh preview"
   },
