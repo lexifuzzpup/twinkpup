@@ -50,7 +50,7 @@ export function Post({ post }: { post: PostView }) {
         <fieldset className="post">
             {post.author_name == null
                 ? <legend className="author" style={{ fontStyle: "oblique" }}>Anonymous</legend>
-                : <legend className="author"><a href={"/profile/" + post.author_id} target="_blank">{post.author_name}</a></legend>}
+                : <legend className="author"><a href={"/profile/" + post.author_id}>{post.author_name}</a></legend>}
             <span className="timestamp">{timestamp}</span>
             <code>{post.content}</code>
         </fieldset>
