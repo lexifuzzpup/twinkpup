@@ -23,7 +23,7 @@ const sockets = new Map<string, HoleSocket>;
 
 export default (repo: Repository) => new Elysia({ name: "thehole" })
     .use(auth(repo))
-    .ws("/thehole/ws", {
+    .ws("/ws", {
         cookie: z.object({
             token: z.string().optional()
         }),
