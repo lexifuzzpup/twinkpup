@@ -52,7 +52,7 @@ export default new Elysia()
         body: z.object({
             content: z.string().trim().nonempty().max(1000)
         }),
-        requiredAuth: true
+        optionalAuth: true
     })
 
     .get("/user/me", async ({ user }) => {
