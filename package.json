@@ -19,6 +19,7 @@
   "dependencies": {
     "bson": "^7.3.3",
     "bun-migrate": "redraskal/bun-migrate#main",
+    "elysia": "^1.4.30",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-scroll-to-bottom": "^4.2.0",

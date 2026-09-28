@@ -11,7 +11,10 @@ export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
                 </>
                 : <>
                     you are logged in as <a href={"/profile/" + user.id} className="aware" target="_blank">{user.name}</a> !!
-                    (or <a href="/account/logout">log out</a>)
+                    (or <button onClick={async () => {
+                        await fetch("/api/logout", { method: "POST" });
+                        document.location.reload();
+                    }}>log out</button>)
                 </>
             }
         </div>

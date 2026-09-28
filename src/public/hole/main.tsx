@@ -6,7 +6,7 @@ import ScrollToBottom from "react-scroll-to-bottom";
 import { BSON } from "bson";
 import z from "zod";
 import { Topbar } from "../topbar";
-import { MessageFlag, MessageType } from "../../thehole";
+import { ClientBoundMessage, MessageFlag, MessageType } from "../../thehole/schema";
 
 // https://github.com/oven-sh/bun/issues/3138#issuecomment-3429287309
 const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
@@ -76,25 +76,6 @@ interface Message {
     flag: MessageFlag;
 }
 
-const messageSchema = z.union([
-    z.object({
-        type: z.literal(MessageType.NEW_MESSAGE),
-        author: z.number().nullable(),
-        text: z.string(),
-        time: z.int(),
-        flag: z.enum(MessageFlag)
-    }),
-    z.object({
-        type: z.literal(MessageType.USER_CONNECT),
-        user: z.number().nullable(),
-        id: z.string()
-    }),
-    z.object({
-        type: z.literal(MessageType.USER_DISCONNECT),
-        id: z.string()
-    })
-]);
-
 function AuthorCard({ user }: { user: PublicUserView | null }) {
     return user == null
         ? <span className="author" style={{ fontStyle: "italic" }}>anonymous</span>
@@ -117,16 +98,19 @@ function Timestamp({ date }: { date: Date }) {
 }
 
 function HoleChat() {
-    const { sendMessage, lastMessage, readyState } = useWebSocket("/thehole/ws");
+    const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket("/thehole/ws", {
+        reconnectInterval: attempt => attempt * 500,
+        shouldReconnect: () => true
+    });
+
     const [ messageHistory, setMessageHistory ] = useState<Message[]>([]);
     const [ members, setMembers ] = useState<Member[]>([]);
     const [ inputText, setInputText ] = useState<string>("");
 
     useEffect(() => {
-        if(lastMessage != null) {
+        if(lastJsonMessage != null) {
             (async () => {
-                const deserialized = BSON.deserialize(await lastMessage.data.arrayBuffer());
-                const parsed = messageSchema.parse(deserialized);
+                const parsed = ClientBoundMessage.parse(lastJsonMessage);
 
                 switch(parsed.type) {
                     case MessageType.NEW_MESSAGE: {
@@ -151,7 +135,7 @@ function HoleChat() {
                 }
             })();
         }
-    }, [ lastMessage ]);
+    }, [ lastJsonMessage ]);
 
     const classNames = {
         [ MessageFlag.USER_MESSAGE ]: "user-message",
@@ -190,10 +174,10 @@ function HoleChat() {
                     e.preventDefault();
 
                     if(inputText.trim().length > 0) {
-                        sendMessage(BSON.serialize({
+                        sendJsonMessage({
                             type: "message",
                             text: inputText
-                        }));
+                        });
                     }
                     
                     setInputText("");

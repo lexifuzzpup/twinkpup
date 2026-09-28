@@ -28,7 +28,8 @@ function Login() {
 
                     const request = await fetch("/api/login", {
                         method: "POST",
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
+                        headers: { "Content-Type": "application/json" }
                     });
 
                     if(request.ok) {

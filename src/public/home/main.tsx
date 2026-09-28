@@ -34,7 +34,7 @@ function Home() {
 
     async function reloadMe() {
         const request = await fetch("/api/user/me");
-        if(request.ok) {
+        if(request.ok || request.status == 401) {
             setMe(await request.json());
             setMeFetched(true);
         } else {

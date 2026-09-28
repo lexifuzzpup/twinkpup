@@ -43,7 +43,8 @@ function Register() {
 
                     const request = await fetch("/api/register", {
                         method: "POST",
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
+                        headers: { "Content-Type": "application/json" }
                     });
 
                     if(request.ok) {

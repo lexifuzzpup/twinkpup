@@ -83,7 +83,8 @@ function Profile({ me, user }: { me: PublicUserView | null, user: PublicUserView
                         onSave={async (newBio) => {
                             const request = await fetch("/api/user/" + user.id, {
                                 method: "PATCH",
-                                body: JSON.stringify({ bio: newBio })
+                                body: JSON.stringify({ bio: newBio }),
+                                headers: { "Content-Type": "application/json" }
                             });
 
                             if(request.ok) {

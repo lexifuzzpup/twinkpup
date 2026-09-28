@@ -9,10 +9,13 @@ export function NewPostForm({ thread, onPosted }: { thread: number, onPosted: ()
             event.preventDefault();
 
             if(content.trim().length > 0) {
-                const body = JSON.stringify({ content });
                 setContent("");
 
-                const request = await fetch("/api/thread/" + thread, { method: "POST", body });
+                const request = await fetch("/api/thread/" + thread, {
+                    method: "POST",
+                    body: JSON.stringify({ content }),
+                    headers: { "Content-Type": "application/json" }
+                });
                 if(request.ok) {
                     onPosted();
                 }
