@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { PostView, PublicUserView } from "../../statements";
 import { NewPostForm, PostList } from "../posts";
 import { PostingAsBanner } from "../user";
 import { Topbar } from "../topbar";
+import type { PostView, PublicUserView } from "../../database";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 

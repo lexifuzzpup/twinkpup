@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PostView } from "../statements";
+import type { PostView } from "../database";
 
 export function NewPostForm({ thread, onPosted }: { thread: number, onPosted: () => void }) {
     const [content, setContent] = useState("");

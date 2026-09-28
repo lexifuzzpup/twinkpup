@@ -1,12 +1,12 @@
 import { use, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { PublicUserView, UserView } from "../../statements";
 import useWebSocket_ from "react-use-websocket";
 import ScrollToBottom from "react-scroll-to-bottom";
 import { BSON } from "bson";
 import z from "zod";
 import { Topbar } from "../topbar";
 import { ClientBoundMessage, MessageFlag, MessageType } from "../../thehole/schema";
+import type { PublicUserView } from "../../database";
 
 // https://github.com/oven-sh/bun/issues/3138#issuecomment-3429287309
 const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;

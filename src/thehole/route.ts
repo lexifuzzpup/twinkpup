@@ -2,7 +2,7 @@ import Elysia from "elysia";
 import z from "zod";
 import { ClientBoundMessage, MessageFlag, MessageType, ServerBoundMessage } from "./schema";
 import auth from "../auth";
-import type { UserView } from "../statements";
+import type { Repository, UserView } from "../database";
 
 interface HoleSocket {
     id: string;
@@ -20,8 +20,8 @@ function broadcast(ws: HoleSocket, channel: string, data: ClientBoundMessage) {
 
 const sockets = new Map<string, HoleSocket>;
 
-export default new Elysia()
-    .use(auth)
+export default (repo: Repository) => new Elysia({ name: "thehole" })
+    .use(auth(repo))
     .ws("/thehole/ws", {
         cookie: z.object({
             token: z.string().optional()

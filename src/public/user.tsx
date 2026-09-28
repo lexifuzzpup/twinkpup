@@ -1,4 +1,4 @@
-import type { PublicUserView } from "../statements";
+import type { PublicUserView } from "../database";
 
 export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
     return (

@@ -1,128 +1,121 @@
+import { password as bunPassword } from "bun";
 import Elysia from "elysia";
-import auth from "../auth";
-import * as statements from "../statements";
-import db from "../database";
-import { password, SHA512 } from "bun";
 import z from "zod";
+import auth from "../auth";
+import { PublicUserView, Repository } from "../database";
 
-function createSessionForUser(userId: number) {
-    const token = crypto.getRandomValues(new Uint8Array(128)).toBase64();
-    const tokenHash = SHA512.hash(token, "base64");
-    const expireDate = new Date();
-    expireDate.setDate(expireDate.getDate() + 3);
-
-    statements.createSession.run(db, { $token: tokenHash, $user: userId, $expires_on: expireDate.toISOString() });
-
-    return { token, expireDate };
-}
-function deleteSession(token: string) {
-    statements.deleteSession.run(db, SHA512.hash(token, "base64"));
+const future = {
+    inDays(days: number) {
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        return date;
+    }
 }
 
-export default new Elysia()
-    .use(auth)
+export default (repo: Repository) => new Elysia()
+    .use(auth(repo))
     .get("/visit", () => {
-        return statements.getVisitCount.get(db);
+        return { visits: repo.getVisitCount() }
     })
-    .post("/visit", () => {
-        statements.createVisit.run(db, new Date().toISOString());
-
-        return statements.getVisitCount.get(db);
+    .post("/visit", ({ status }) => {
+        repo.createVisit();
+        return status(201, { visits: repo.getVisitCount() });
     })
 
-    .get("/thread/:threadId", async ({ params }) => {
-        const posts = statements.findPostsInThread.all(db, {
-            $thread: +params.threadId, $limit: 20 });
+    .group("/thread/:threadId", {
+        params: z.object({
+            threadId: z.coerce.number().int()
+        })
+    }, app => app
+        .get("", async ({ params: { threadId } }) => {
+            return repo.findPostsInThread(threadId, 20);
+        }, )
+        .post("", async ({ body, params: { threadId }, user, status }) => {
+            const postId = repo.createPost(user?.id ?? null, body.content, threadId);
 
-        return posts;
-    })
-    .post("/thread/:threadId", async ({ body, params, user }) => {
-        const postResult = statements.createPost.run(db, {
-            $time: new Date().toISOString(),
-            $author: user?.id ?? null,
-            $content: body.content,
-            $thread: +params.threadId
-        });
-
-        const post = statements.findPostById.get(db, postResult.lastInsertRowid as number);
-        
-        if(post == null) return Response.json(null, { status: 404 });
-        return post;
-    }, {
-        body: z.object({
-            content: z.string().trim().nonempty().max(1000)
-        }),
-        optionalAuth: true
-    })
+            const post = repo.getPost(postId);
+            
+            if(post == null) return Response.json(null, { status: 404 });
+            return status(201, post);
+        }, {
+            body: z.object({
+                content: z.string().trim().nonempty().max(1000)
+            }),
+            optionalAuth: true
+        })
+    )
 
     .get("/user/me", async ({ user }) => {
         if(user == null) return Response.json(null, { status: 401 });
-        return user;
+        return PublicUserView.parse(user);
     }, {
         optionalAuth: true
     })
     
-    .get("/user/:userId", async ({ params: { userId } }) => {
-        const user = statements.findUserById.get(db, +userId);
+    .group("/user/:userId", {
+        params: z.object({
+            userId: z.coerce.number().int()
+        })
+    }, app => app
+        .get("", async ({ params: { userId } }) => {
+            const user = repo.getUser(userId);
 
-        if(user == null) return Response.json(null, { status: 404 });
-        return user;
-    })
-    .patch("/user/:userId", async ({ params: { userId }, status, body, user }) => {
-        if(user.id.toString() != userId) {
-            return status(403, { error: "forbidden" });
-        }
+            if(user == null) return Response.json(null, { status: 404 });
+            return PublicUserView.parse(user);
+        })
+        .patch("", async ({ params: { userId }, status, body, user }) => {
+            if(user.id != userId) {
+                return status(403, { error: "forbidden" });
+            }
 
-        if(body.bio != null) {
-            statements.setUserBio.run(db, { $id: +userId, $bio: body.bio });
-        }
+            if(body.bio != null) {
+                repo.setUserBio(userId, body.bio);
+            }
 
-        return body;
-    }, {
-        body: z.object({
-            // username: z.string().optional(),
-            bio: z.string().max(4000).optional(),
-        }),
-        requiredAuth: true
-    })
+            return status(205, { success: true });
+        }, {
+            body: z.object({
+                // username: z.string().optional(),
+                bio: z.string().max(4000).optional(),
+            }),
+            requiredAuth: true
+        })
+    )
 
-    .post("/register", async ({ body, status, cookie }) => {
-        if(body.username.length < 4 || body.username.length > 50) {
+    .post("/register", async ({ body: { username, password }, status, cookie }) => {
+        if(username.length < 4 || username.length > 50) {
             return status(400, { error: "username_length", min: 4, max: 50 });
         }
-        if(body.password.length < 6) {
+        if(password.length < 6) {
             return status(400, { error: "password_length", min: 6 });
         }
 
-        if(/[^A-Za-z0-9\-_\.]/g.test(body.username)) {
+        if(/[^A-Za-z0-9\-_\.]/g.test(username)) {
             return status(400, { error: "invalid_username" });
         }
         
-        if(statements.isUsernameTaken.get(db, body.username)) {
+        if(repo.isUsernameTaken(username)) {
             return status(400, { error: "username_taken" });
         }
 
-        const hash = await password.hash(body.password);
+        const hash = await bunPassword.hash(password);
 
-        const loginResult = statements.createPasswordLogin.run(db, {
-            $hash: hash,
-            $creation_time: new Date().toISOString()
-        });
-        const registerResult = statements.createUser.run(db, {
-            $name: body.username,
-            $login: loginResult.lastInsertRowid as number,
-            $creation_time: new Date().toISOString()
-        });
+        const loginId = repo.createPasswordLogin(hash);
+        const userId = repo.createUser(username, loginId);
 
-        const user = statements.findUserById.get(db, registerResult.lastInsertRowid as number)!;
+        const tokenExpires = future.inDays(3);
+        const token = repo.createSession(userId, tokenExpires);
 
-        const session = createSessionForUser(user.id);
-        const token = cookie.token;
-        token.value = session.token;
-        token.expires = session.expireDate;
-        token.secure = true;
+        if(token != null) {
+            const tokenCookie = cookie.token;
+            tokenCookie.value = token;
+            tokenCookie.expires = tokenExpires;
+            tokenCookie.secure = true;
+        }
 
-        return user;
+        const user = repo.getPublicUser(userId);
+
+        return status(201, user);
     }, {
         body: z.object({
             username: z.string().nonempty(),
@@ -131,27 +124,33 @@ export default new Elysia()
         optionalAuth: true // adds the "token" cookie
     })
     
-    .post("/login", async ({ body, status, cookie }) => {
-        const login = statements.findLoginByUserName.get(db, body.username);
+    .post("/login", async ({ body: { username, password }, status, cookie }) => {
+        const login = repo.findLoginByUserName(username);
         if(login == null) {
             return status(404, { error: "unknown_user" });
         }
 
         if(login.password != null) {
-            const success = await password.verify(body.password, login.password);
+            const success = await bunPassword.verify(password, login.password);
 
             if(!success) return status(401, { error: "invalid_password" });
         } else {
             return status(400, { error: "unknown_auth_type" });
         }
 
-        const session = createSessionForUser(login.user_id);
-        const token = cookie.token;
-        token.value = session.token;
-        token.expires = session.expireDate;
-        token.secure = true;
+        const tokenExpires = future.inDays(3);
+        const token = repo.createSession(login.user_id, tokenExpires);
 
-        return { token: session.token };
+        if(token != null) {
+            const tokenCookie = cookie.token;
+            tokenCookie.value = token;
+            tokenCookie.expires = tokenExpires;
+            tokenCookie.secure = true;
+
+            return { token };
+        }
+
+        return status(500, { error: "token_creation_failure" });
     }, {
         body: z.object({
             username: z.string().nonempty(),
@@ -160,11 +159,14 @@ export default new Elysia()
         optionalAuth: true // adds the "token" cookie
     })
 
-    .post("/logout", async ({ cookie: { token } }) => {
-        deleteSession(token.value);
-        token.remove();
+    .post("/logout", async ({ cookie: { token }, status }) => {
+        if(repo.deleteSession(token.value)) {
+            token.remove();
 
-        return { success: true };
+            return status(205, { success: true });
+        }
+
+        return status(200, { warning: "token_not_found" });
     }, {
         requiredAuth: true
     })
