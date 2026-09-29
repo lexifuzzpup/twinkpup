@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { PostView, PublicUserView } from "../../schema";
-import { NewPostForm, PostList } from "../posts";
-import { Topbar } from "../topbar";
-import { PostingAsBanner } from "../user";
 import { useNetworkJsonResource } from "../network";
 import Oneko from "../oneko";
+import { NewPostForm, PostList } from "../posts";
+import { useOnekoEnabled } from "../settings";
+import { Topbar } from "../topbar";
+import { PostingAsBanner } from "../user";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
-function Home() {    
+function Home() {
     const userId = document.location.pathname.split("/").pop();
 
     const me = useNetworkJsonResource({

@@ -1,0 +1,80 @@
+diff --git a/lib/src/reader.js b/lib/src/reader.js
+index e7baae7f307f880933b3a6632e75379bd04db26f..57ad2756058bad6d6a428499830b2e2f13f9a0c3 100644
+--- a/lib/src/reader.js
++++ b/lib/src/reader.js
+@@ -225,14 +225,8 @@ export class GifReader {
+      * Clears a frame area to background color
+      */
+     clearFrameArea(canvas, left, top, width, height, globalColorTable, backgroundColorIndex, canvasWidth) {
+-        let bgR = 0, bgG = 0, bgB = 0, bgA = 0;
+-        if (globalColorTable &&
+-            backgroundColorIndex < globalColorTable.length / 3) {
+-            bgR = globalColorTable[backgroundColorIndex * 3];
+-            bgG = globalColorTable[backgroundColorIndex * 3 + 1];
+-            bgB = globalColorTable[backgroundColorIndex * 3 + 2];
+-            bgA = 255;
+-        }
++        // Browsers ignore the background color and restore to transparent
++        const bgR = 0, bgG = 0, bgB = 0, bgA = 0;
+         for (let y = 0; y < height; y++) {
+             for (let x = 0; x < width; x++) {
+                 const canvasX = left + x;
+@@ -557,25 +551,12 @@ export class GifReader {
+             globalColorTable = this.readBytes(globalColorTableSize * 3);
+         }
+         // Canvas for proper frame composition
++        // Starts fully transparent, matching browser behavior
+         let canvas = new Uint8ClampedArray(width * height * 4);
+         let previousCanvas = null;
+-        // Initialize canvas with background color
+-        if (globalColorTable &&
+-            backgroundColorIndex < globalColorTable.length / 3) {
+-            const bgR = globalColorTable[backgroundColorIndex * 3];
+-            const bgG = globalColorTable[backgroundColorIndex * 3 + 1];
+-            const bgB = globalColorTable[backgroundColorIndex * 3 + 2];
+-            for (let i = 0; i < canvas.length; i += 4) {
+-                canvas[i] = bgR;
+-                canvas[i + 1] = bgG;
+-                canvas[i + 2] = bgB;
+-                canvas[i + 3] = 255;
+-            }
+-        }
+-        else {
+-            // Default to transparent
+-            canvas.fill(0);
+-        }
++        // Disposal of the last drawn frame, applied before the next one is drawn
++        let lastDisposal = DisposalMethod.DoNotDispose;
++        let lastRect = null;
+         let currentDelay = 100; // Default delay
+         let currentDisposal = DisposalMethod.DoNotDispose;
+         let currentTransparentIndex = -1;
+@@ -718,17 +699,20 @@ export class GifReader {
+                 try {
+                     // Handle disposal method from previous frame
+                     if (previousCanvas &&
+-                        currentDisposal === DisposalMethod.RestoreToPrevious) {
++                        lastDisposal === DisposalMethod.RestoreToPrevious) {
+                         canvas = new Uint8ClampedArray(previousCanvas);
+                     }
+-                    else if (currentDisposal === DisposalMethod.RestoreToBackground) {
+-                        // Clear the frame area to background
+-                        this.clearFrameArea(canvas, frameLeft, frameTop, frameWidth, frameHeight, globalColorTable, backgroundColorIndex, width);
+-                    }
+-                    // Save current canvas state if needed for next frame
+-                    if (currentDisposal === DisposalMethod.RestoreToPrevious) {
+-                        previousCanvas = new Uint8ClampedArray(canvas);
++                    else if (lastRect &&
++                        lastDisposal === DisposalMethod.RestoreToBackground) {
++                        // Clear the previous frame's area to background
++                        this.clearFrameArea(canvas, lastRect.left, lastRect.top, lastRect.width, lastRect.height, globalColorTable, backgroundColorIndex, width);
+                     }
++                    // Save canvas state if this frame will be undone afterwards
++                    previousCanvas = currentDisposal === DisposalMethod.RestoreToPrevious
++                        ? new Uint8ClampedArray(canvas)
++                        : null;
++                    lastDisposal = currentDisposal;
++                    lastRect = { left: frameLeft, top: frameTop, width: frameWidth, height: frameHeight };
+                     // Decompress LZW data
+                     const indexData = decompressLZW(compressedData, lzwMinimumCodeSize);
+                     // Composite frame onto canvas

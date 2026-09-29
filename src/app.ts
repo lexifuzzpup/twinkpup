@@ -7,6 +7,7 @@ import account_register from "./public/account/register/index.html";
 import hole_index from "./public/hole/index.html";
 import home_index from "./public/home/index.html";
 import profile_index from "./public/profile/index.html";
+import settings_index from "./public/settings/index.html";
 import thehole from "./thehole/route";
 
 export default (options: { repository: Repository, development: boolean }) => new Elysia()
@@ -28,3 +29,4 @@ export default (options: { repository: Repository, development: boolean }) => ne
     )
     .get("/profile/:userId", profile_index)
     .get("/thehole", hole_index)
+    .get("/settings", settings_index)

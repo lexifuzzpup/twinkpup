@@ -1,4 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+//@ts-expect-error
+import explosionGif from "./assets/explosion.gif";
+import { GifPlayer } from "./gifPlayer";
+import { useOnekoEnabled } from "./settings";
 
 interface OnekoState {
     nekoPosX: number;
@@ -85,17 +89,21 @@ const spriteSets: Record<string, [number, number][]> = {
 
 // Courtesy of https://github.com/Asif10H/react-cursor-cat/
 export function Oneko() {
+    const [ enabled ] = useOnekoEnabled();
+
+    const previouslyEnabled = useRef(enabled);
+    const state = useMemo(loadState, [ enabled ]);
+
     useEffect(() => {
-        const nekoEl = document.createElement("div");
+        const neko = document.createElement("div");
         const nekoSpeed = 10;
-        const state = loadState();
 
         const beforeUnloadListener = () => saveState(state);
         window.addEventListener("beforeunload", beforeUnloadListener);
 
         function setSprite(name: string, frame: number) {
             const sprite = spriteSets[name]![frame % spriteSets[name]!.length]!;
-            nekoEl.style.backgroundPosition = `${sprite[0] * 32}px ${sprite[1] * 32}px`;
+            neko.style.backgroundPosition = `${sprite[0] * 32}px ${sprite[1] * 32}px`;
         }
         function resetIdleAnimation() {
             state.idleAnimation = null;
@@ -157,25 +165,22 @@ export function Oneko() {
             setSprite(direction, state.frameCount);
             state.nekoPosX -= (diffX / distance) * nekoSpeed;
             state.nekoPosY -= (diffY / distance) * nekoSpeed;
-            nekoEl.style.left = `${state.nekoPosX - 16}px`;
-            nekoEl.style.top = `${state.nekoPosY - 16}px`;
+            move();
 
             saveState(state);
         }
+        function move() {
+            neko.style.left = `${state.nekoPosX - 16}px`;
+            neko.style.top = `${state.nekoPosY - 16}px`;
+        }
         function create() {
-            nekoEl.id = "oneko";
-            nekoEl.style.width = "32px";
-            nekoEl.style.height = "32px";
-            nekoEl.style.position = "fixed";
+            neko.id = "oneko";
 
-            nekoEl.style.imageRendering = "pixelated";
-            nekoEl.style.left = "16px";
-            nekoEl.style.top = "16px";
-            nekoEl.style.pointerEvents = "none";
-            nekoEl.style.zIndex = "9999";
+            neko.hidden = !enabled;
 
             frame();
-            document.body.appendChild(nekoEl);
+            move();
+            document.body.appendChild(neko);
 
             const handleMouseMove = (event: MouseEvent) => {
                 state.mousePosX = event.clientX;
@@ -183,22 +188,40 @@ export function Oneko() {
             };
             document.addEventListener("mousemove", handleMouseMove);
 
-            const interval = setInterval(frame, 100);
+            const interval = setInterval(() => {
+                if(enabled) frame();
+            }, 100);
 
             return () => {
                 clearInterval(interval);
                 window.removeEventListener("beforeunload", beforeUnloadListener);
                 document.removeEventListener("mousemove", handleMouseMove);
-                if (document.body.contains(nekoEl)) {
-                    document.body.removeChild(nekoEl);
+                if(document.body.contains(neko)) {
+                    document.body.removeChild(neko);
                 }
+
+                saveState(state);
             };
         }
         const cleanup = create();
         return cleanup;
-    }, []);
+    }, [ enabled ]);
 
-    return <></>;
+    const showExplosion = !enabled && previouslyEnabled.current;
+    previouslyEnabled.current = enabled;
+
+    return <>
+        { showExplosion && 
+        <div
+            id="oneko-explode"
+            style={{
+                left: state.nekoPosX,
+                top: state.nekoPosY
+            }}
+        >
+            <GifPlayer url={explosionGif} />
+        </div> }
+    </>;
 };
 
 export default Oneko;
