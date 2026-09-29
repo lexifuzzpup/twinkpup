@@ -1,9 +1,6 @@
 # twinkpup
-<img src="src/public/assets/explosion.gif" width="32" style="display: inline;">
-<img src="src/public/assets/explosion.gif" width="32" style="display: inline;">
+<img src="src/public/assets/explosion.gif" width="100%" height="64" style="display: block;">
 a silly little web forum
-<img src="src/public/assets/explosion.gif" width="32" style="display: inline;">
-<img src="src/public/assets/explosion.gif" width="32" style="display: inline;">
 
 ## Prerequisites
 This project requires the following installed on your development computer:
