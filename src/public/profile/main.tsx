@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { PublicUserView, type PostView } from "../../schema";
+import { PostView, PublicUserView } from "../../schema";
 import { NewPostForm, PostList } from "../posts";
 import { Topbar } from "../topbar";
 import { PostingAsBanner } from "../user";
@@ -37,23 +37,17 @@ function Home() {
 }
 
 function Profile({ me, user }: { me: PublicUserView | null, user: PublicUserView }) {
-    const [posts, setPosts] = useState<PostView[]>([]);
     const [editingBio, setEditingBio] = useState<boolean>(false);
 
-    async function reloadPosts() {
-        const request = await fetch("/api/thread/" + user.profile_thread);
-        if(request.ok) {
-            setPosts(await request.json());
-        } else {
-            console.error("Failed to load recent posts");
-        }
-    }
+    const posts = useNetworkJsonResource({
+        url: "/api/thread/1",
+        schema: PostView.array(),
+        seamless: true
+    });
 
     useEffect(() => {
-        reloadPosts();
-
         const interval = setInterval(() => {
-            reloadPosts();
+            posts.reload();
         }, 10 * 1000);
 
         return () => clearInterval(interval);
@@ -96,13 +90,13 @@ function Profile({ me, user }: { me: PublicUserView | null, user: PublicUserView
                         <fieldset>
                             <legend className="super-aware">talk about this person</legend>
                             <PostingAsBanner user={me} />
-                            <NewPostForm thread={user.profile_thread} onPosted={reloadPosts} />
+                            <NewPostForm thread={user.profile_thread} onPosted={posts.reload} />
                         </fieldset>
 
                         <fieldset>
                             <legend className="super-aware">what people are saying</legend>
 
-                            <PostList posts={posts} />
+                            { posts.loaded && <PostList posts={posts.result} /> }
                         </fieldset>
                     </>
                     : <>

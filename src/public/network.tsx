@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import z, { ZodAny, ZodType } from "zod";
-import type { ZodTypeAny } from "zod/v3";
 
 interface NetworkJsonResourceOptions<Schema> {
     url: string,
     retryInterval?: (attempt: number) => number,
     maxAttempts?: number,
     schema?: Schema,
+    seamless?: boolean,
     fetchImmediately?: boolean
 }
 
 export function useNetworkJsonResource
 <Schema extends ZodType = ZodAny>
-({ url, retryInterval, maxAttempts, schema, fetchImmediately }: NetworkJsonResourceOptions<Schema>): (
+({ url, retryInterval, maxAttempts, schema, fetchImmediately, seamless }: NetworkJsonResourceOptions<Schema>): (
     (
         { result: z.infer<Schema>, loaded: true } |
         { result: null, loaded: false }
@@ -24,6 +24,7 @@ export function useNetworkJsonResource
     retryInterval ??= () => 5000;
     maxAttempts ??= 1;
     fetchImmediately ??= true;
+    seamless ??= false;
     
     const [ loaded, setLoaded ] = useState<boolean>(false);
     const [ result, setResult ] = useState<any>(null);
@@ -31,8 +32,10 @@ export function useNetworkJsonResource
     const attempts = useRef(0);
 
     async function reload() {
-        setLoaded(false);
-        setFailed(false);
+        if(!seamless) {
+            setLoaded(false);
+            setFailed(false);
+        }
 
         attempts.current = attempts.current + 1;
 
@@ -40,6 +43,7 @@ export function useNetworkJsonResource
         const body = await request.json();
 
         if(body?.error) {
+            setLoaded(false);
             setFailed(true);
             return false;
         }

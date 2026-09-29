@@ -14,11 +14,13 @@ function Home() {
     const visits = useNetworkJsonResource({
         url: "/api/visit",
         schema: z.object({ visits: z.int() }),
-        fetchImmediately: false
+        fetchImmediately: false,
+        seamless: true
     });
     const posts = useNetworkJsonResource({
         url: "/api/thread/1",
-        schema: PostView.array()
+        schema: PostView.array(),
+        seamless: true
     });
     const me = useNetworkJsonResource({
         url: "/api/user/me",
