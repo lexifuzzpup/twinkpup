@@ -41,7 +41,7 @@ function Profile({ me, user }: { me: PublicUserView | null, user: PublicUserView
     const [editingBio, setEditingBio] = useState<boolean>(false);
 
     const posts = useNetworkJsonResource({
-        url: "/api/thread/1",
+        url: "/api/thread/" + user.profile_thread,
         schema: PostView.array(),
         seamless: true
     });
