@@ -5,6 +5,7 @@ import useWebSocket_ from "react-use-websocket";
 import { PublicUserView } from "../../schema";
 import { ClientBoundMessage, MessageFlag, MessageType } from "../../thehole/schema";
 import { Topbar } from "../topbar";
+import Oneko from "../oneko";
 
 // https://github.com/oven-sh/bun/issues/3138#issuecomment-3429287309
 const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
@@ -15,6 +16,7 @@ function Home() {
     return (
         <>
             <div className="background"></div>
+            <Oneko />
 
             <div style={{ display: "grid", gridTemplateRows: "max-content minmax(0, 1fr)", height: "100%" }}>
                 <Topbar />

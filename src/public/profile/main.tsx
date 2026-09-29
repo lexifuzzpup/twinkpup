@@ -5,6 +5,7 @@ import { NewPostForm, PostList } from "../posts";
 import { Topbar } from "../topbar";
 import { PostingAsBanner } from "../user";
 import { useNetworkJsonResource } from "../network";
+import Oneko from "../oneko";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
@@ -28,6 +29,8 @@ function Home() {
         <>
             <div className="background"></div>
             <Topbar />
+            <Oneko />
+
             { viewingUser && me.loaded && viewingUser.loaded && <Profile me={me.result} user={viewingUser.result} /> }
         </>
     )

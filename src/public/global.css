@@ -103,3 +103,7 @@ nav {
         gap: 1rem;
     }
 }
+
+#oneko {
+    background-image: url('assets/oneko.gif');
+}

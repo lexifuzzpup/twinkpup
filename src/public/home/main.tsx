@@ -6,6 +6,7 @@ import { Topbar } from "../topbar";
 import { PostView, PublicUserView } from "../../schema";
 import { useNetworkJsonResource } from "../network";
 import z from "zod";
+import Oneko from "../oneko";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
@@ -41,6 +42,7 @@ function Home() {
         <>
             <div className="background"></div>
             <Topbar />
+            <Oneko />
 
             <span className="aware">
                 this site has been visited <span className="aware">{visits.result?.visits ?? "..."}</span> time(s) !!

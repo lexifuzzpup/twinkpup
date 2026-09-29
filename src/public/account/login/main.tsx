@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Field } from "../field.tsx";
 import { Topbar } from "../../topbar.tsx";
+import Oneko from "../../oneko.tsx";
 
 createRoot(document.querySelector("#root")!).render(<Login />);
 
@@ -13,6 +14,7 @@ function Login() {
     return (
         <>
             <div className="background"></div>
+            <Oneko />
 
             <Topbar />
 
