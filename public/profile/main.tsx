@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { PostView, PublicUserView } from "../../schema";
+import { PostView, PublicUserView } from "../../src/schema";
 import { useNetworkJsonResource } from "../network";
 import Oneko from "../oneko";
 import { NewPostForm, PostList } from "../posts";

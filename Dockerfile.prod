@@ -29,6 +29,7 @@ FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=install /temp/prod/patches patches
 COPY --from=prerelease /usr/src/app/src src
+COPY --from=prerelease /usr/src/app/public public
 COPY --from=prerelease /usr/src/app/package.json .
 
 RUN mkdir /data && chown 1000:1000 /data

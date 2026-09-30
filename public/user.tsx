@@ -1,4 +1,4 @@
-import { PublicUserView } from "../schema";
+import { PublicUserView } from "../src/schema";
 
 export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
     return (

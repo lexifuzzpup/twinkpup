@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import ScrollToBottom from "react-scroll-to-bottom";
 import useWebSocket_ from "react-use-websocket";
-import { PublicUserView } from "../../schema";
-import { ClientBoundMessage, MessageFlag, MessageType } from "../../thehole/schema";
+import { PublicUserView } from "../../src/schema";
+import { ClientBoundMessage, MessageFlag, MessageType } from "../../src/thehole/schema";
 import { Topbar } from "../topbar";
 import Oneko from "../oneko";
 

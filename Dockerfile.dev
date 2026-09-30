@@ -2,7 +2,8 @@
 # see all versions at https://hub.docker.com/r/oven/bun/tags
 FROM oven/bun:1
 WORKDIR /usr/src/app
-COPY . .
+COPY package.json bun.lock .
+COPY patches ./patches
 RUN mkdir -p /data/db
 
 RUN bun install

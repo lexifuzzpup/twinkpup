@@ -6,6 +6,7 @@ services:
     volumes:
       - ./run/dev:/data
       - ./src:/usr/src/app/src
+      - ./public:/usr/src/app/public
     ports:
       - 3000:3000
     security_opt:

@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { NewPostForm, PostList } from "../posts";
 import { PostingAsBanner } from "../user";
 import { Topbar } from "../topbar";
-import { PostView, PublicUserView } from "../../schema";
+import { PostView, PublicUserView } from "../../src/schema";
 import { useNetworkJsonResource } from "../network";
 import z from "zod";
 import Oneko from "../oneko";
