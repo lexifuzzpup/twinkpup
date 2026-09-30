@@ -6,6 +6,7 @@ import { PublicUserView } from "../../src/schema";
 import { ClientBoundMessage, MessageFlag, MessageType } from "../../src/thehole/schema";
 import { Topbar } from "../topbar";
 import Oneko from "../oneko";
+import { useSettingTheme } from "../settings";
 
 // https://github.com/oven-sh/bun/issues/3138#issuecomment-3429287309
 const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
@@ -13,8 +14,9 @@ const useWebSocket = (useWebSocket_ as any).default as typeof useWebSocket_;
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
+    const [ theme ] = useSettingTheme();
     return (
-        <>
+        <div id="app" data-theme={theme}>
             <div className="background"></div>
             <Oneko />
 
@@ -22,7 +24,7 @@ function Home() {
                 <Topbar />
                 <HoleChat />
             </div>
-        </>
+        </div>
     );
 }
 

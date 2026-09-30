@@ -17,6 +17,10 @@
 
 
 .option {
+    border: 1px solid currentColor;
+    background: #000;
+    padding: 0.5rem;
+    width: max-content;
     &.checkbox {
         display: grid;
         grid-template-columns: max-content max-content 1fr;
@@ -31,10 +35,11 @@
             height: 1.5rem;
             background: #000;
 
-            border: 1px solid green;
+
+            border: 1px solid var(--color-background-lighter);
 
             &.toggled {
-                border-color: lime;
+                border-color: var(--color-main);
             }
 
             .slider {
@@ -44,7 +49,7 @@
                 left: 0;
 
                 transition: left 50ms ease-out;
-                background: green;
+                background: var(--color-background-lighter);
 
                 color: white;
 
@@ -60,7 +65,7 @@
 
             &.toggled .slider {
                 left: 50%;
-                background: lime;
+                background: var(--color-main);
 
                 &:before {
                     background-image: url('../assets/icon/check.svg');
@@ -71,5 +76,46 @@
             margin-left: 1rem;
             user-select: none;
         }
+    }
+}
+
+.Dropdown-root {
+    width: max-content;
+}
+
+.Dropdown-control {
+    border-style: inset;
+    padding: 0.25rem 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+
+    &::after {
+        margin-left: 1rem;
+        content: "V";
+    }
+}
+
+
+.Dropdown-menu {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+
+    list-style: none;
+    background: black;
+
+    border: 1px solid currentColor;
+    border-top: none;
+}
+
+.Dropdown-option {
+    user-select: none;
+    cursor: pointer;
+
+    padding: 0.25rem 0.5rem;
+
+    &:hover {
+        background: var(--color-background);
     }
 }

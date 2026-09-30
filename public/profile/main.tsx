@@ -4,13 +4,15 @@ import { PostView, PublicUserView } from "../../src/schema";
 import { useNetworkJsonResource } from "../network";
 import Oneko from "../oneko";
 import { NewPostForm, PostList } from "../posts";
-import { useOnekoEnabled } from "../settings";
+import { useSettingOnekoEnabled, useSettingTheme } from "../settings";
 import { Topbar } from "../topbar";
 import { PostingAsBanner } from "../user";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
+    const [ theme ] = useSettingTheme();
+
     const userId = document.location.pathname.split("/").pop();
 
     const me = useNetworkJsonResource({
@@ -27,13 +29,13 @@ function Home() {
     });
 
     return (
-        <>
+        <div id="app" data-theme={theme}>
             <div className="background"></div>
             <Topbar />
             <Oneko />
 
             { viewingUser && me.loaded && viewingUser.loaded && <Profile me={me.result} user={viewingUser.result} /> }
-        </>
+        </div>
     )
 }
 

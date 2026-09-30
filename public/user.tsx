@@ -2,7 +2,7 @@ import { PublicUserView } from "../src/schema";
 
 export function PostingAsBanner({ user }: { user: PublicUserView | null }) {
     return (
-        <div className="account-notice" style={{ color: "#f0f" }}>
+        <div className="account-notice" style={{ color: "var(--color-contrast)" }}>
             { user == null
                 ? <>
                     you are posting as the elusive <span className="aware">ANONYMOUS</span>..

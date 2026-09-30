@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Field } from "../field.tsx";
 import { Topbar } from "../../topbar.tsx";
 import Oneko from "../../oneko.tsx";
+import { useSettingTheme } from "../../settings.tsx";
 
 createRoot(document.querySelector("#root")!).render(<Register />);
 
@@ -16,13 +17,14 @@ function formatMinMax(min?: number, max?: number) {
 }
 
 function Register() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [passwordConfirm, setPasswordConfirm] = useState("");
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [ theme ] = useSettingTheme();
+    const [ username, setUsername ] = useState("");
+    const [ password, setPassword ] = useState("");
+    const [ passwordConfirm, setPasswordConfirm ] = useState("");
+    const [ errors, setErrors ] = useState<Record<string, string>>({});
 
     return (
-        <>
+        <div id="app" data-theme={theme}>
             <div className="background"></div>
             <Oneko />
 
@@ -80,6 +82,6 @@ function Register() {
                     <input type="submit" value="register!" />
                 </form>
             </fieldset>
-        </>
+        </div>
     );
 }

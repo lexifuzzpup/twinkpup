@@ -52,6 +52,9 @@ export function useSetting
 }
 
 
-export function useOnekoEnabled() {
+export function useSettingOnekoEnabled() {
     return useSetting("oneko_enabled", true, z.boolean());
+}
+export function useSettingTheme() {
+    return useSetting("theme", "sparkle", z.string());
 }

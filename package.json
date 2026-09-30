@@ -20,12 +20,14 @@
   },
   "dependencies": {
     "@elysia/openapi": "^1.4.16",
+    "@elysia/static": "^1.4.11",
     "bson": "^7.3.3",
     "bun-migrate": "redraskal/bun-migrate#main",
     "elysia": "^1.4.30",
     "gif-tools": "^1.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-dropdown": "^2.0.0",
     "react-scroll-to-bottom": "^4.2.0",
     "react-use-websocket": "^4.13.0",
     "zod": "^4.6.5"

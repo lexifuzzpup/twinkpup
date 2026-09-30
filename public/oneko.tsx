@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 //@ts-expect-error
 import explosionGif from "./assets/explosion.gif";
 import { GifPlayer } from "./gifPlayer";
-import { useOnekoEnabled } from "./settings";
+import { useSettingOnekoEnabled } from "./settings";
 
 interface OnekoState {
     nekoPosX: number;
@@ -89,7 +89,7 @@ const spriteSets: Record<string, [number, number][]> = {
 
 // Courtesy of https://github.com/Asif10H/react-cursor-cat/
 export function Oneko() {
-    const [ enabled ] = useOnekoEnabled();
+    const [ enabled ] = useSettingOnekoEnabled();
 
     const previouslyEnabled = useRef(enabled);
     const state = useMemo(loadState, [ enabled ]);

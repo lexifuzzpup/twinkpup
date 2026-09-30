@@ -7,10 +7,13 @@ import { PostView, PublicUserView } from "../../src/schema";
 import { useNetworkJsonResource } from "../network";
 import z from "zod";
 import Oneko from "../oneko";
+import { useSettingTheme } from "../settings";
 
 createRoot(document.querySelector("#root")!).render(<Home />);
 
 function Home() {
+    const [ theme ] = useSettingTheme();
+
     const visits = useNetworkJsonResource({
         url: "/api/visit",
         schema: z.object({ visits: z.int() }),
@@ -41,7 +44,7 @@ function Home() {
     }, []);
 
     return (
-        <>
+        <div id="app" data-theme={theme}>
             <div className="background"></div>
             <Topbar />
             <Oneko />
@@ -61,6 +64,6 @@ function Home() {
 
                 { posts.loaded && <PostList posts={posts.result} /> }
             </fieldset>
-        </>
+        </div>
     );
 }

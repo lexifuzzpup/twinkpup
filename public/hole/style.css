@@ -76,7 +76,7 @@ body {
                 }
 
                 &:hover {
-                    background: #f0f2;
+                    background: color-mix(in srgb, var(--color-contrast) 20%, #000 80%);
                 }
             }
         }

@@ -1,6 +1,52 @@
-body {
-    color: #0f0;
+#app {
+    &[data-theme="sparkle"] {
+        --color-main: #0f0;
+        --color-contrast: #f0f;
+        --color-background: #040;
+        --color-background-lighter: #060;
+
+        .background {
+            background: url('./assets/background/sparkle.gif');
+            background-size: 256px;
+            image-rendering: pixelated;
+        }
+    }
+    &[data-theme="sparkle_red"] {
+        --color-main: #f00;
+        --color-contrast: #ff0;
+        --color-background: #400;
+        --color-background-lighter: #600;
+
+        .background {
+            background: url('./assets/background/sparkle-red.gif');
+            background-size: 256px;
+            image-rendering: pixelated;
+        }
+    }
+    &[data-theme="flint"] {
+        --color-main: #0ff;
+        --color-contrast: #0f0;
+        --color-background: #044;
+        --color-background-lighter: #066;
+
+        .background {
+            background: url('./assets/background/flint.png');
+        }
+    }
+    &[data-theme="boring"] {
+        --color-main: #fff;
+        --color-contrast: #888;
+        --color-background: #333;
+        --color-background-lighter: #444;
+
+        .background {
+            background: #000;
+        }
+    }
+
+    color: var(--color-main);
 }
+
 .background {
     position: fixed;
     width: 100%;
@@ -9,10 +55,6 @@ body {
     top: 0;
 
     z-index: -1;
-
-    background: url('./assets/sparkle.gif');
-    background-size: 256px;
-    image-rendering: pixelated;
 }
 
 textarea {
@@ -22,14 +64,14 @@ textarea {
 }
 
 textarea, fieldset, input, button {
-    border-color: rgb(118, 0, 222);
+    border-color: color-mix(in srgb, 70% var(--color-contrast), 30% #000);
 }
 
 a {
     color: currentColor;
 
     &:visited {
-        color: color-mix(in srgb, 80% currentColor, 20% #000);
+        color: currentColor;
     }
 }
 
@@ -72,7 +114,7 @@ form {
 }
 
 input, button {
-    color: #f0f;
+    color: var(--color-contrast);
     background: #000;
 }
 
@@ -105,7 +147,7 @@ nav {
 }
 
 #oneko {
-    background-image: url('assets/oneko.gif');
+    background-image: url('./assets/oneko.gif');
     width: 32px;
     height: 32px;
 }
