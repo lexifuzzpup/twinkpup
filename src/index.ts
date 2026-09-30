@@ -21,12 +21,23 @@ await migrate(db, {
 });
 
 const repository = new Repository(db);
-
 const server = app({ repository, development: developmentEnabled }).listen(3000);
+const maintenanceInterval = setInterval(maintenance, 10 * 60 * 1000);
+maintenance();
+
+function maintenance() {
+    console.log("Running maintenance...")
+
+    const sessionsRemoved = repository.deleteExpiredSessions();
+    if(sessionsRemoved > 0) console.log("Removed " + sessionsRemoved + " session(s)");
+}
 
 async function shutdown(signal: string) {
     console.log("Received " + signal + "; stopping server...");
+
+    clearInterval(maintenanceInterval);
     await server.stop();
+    
     process.exit(0);
 };
 

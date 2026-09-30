@@ -1,6 +1,7 @@
 import { SHA512 } from "bun";
 import { Database } from "bun:sqlite";
 import { PostView, PublicUserView, UserLogin, UserView } from "./schema";
+import z from "zod";
 
 export class Repository {
     public constructor(
@@ -71,16 +72,16 @@ export class Repository {
         return response.lastInsertRowid as number;
     }
     
-    public findUserByToken(token: string): UserView | null {
+    public findUserByToken(token: string): UserView & { token_expires_on: Date } | null {
         const response = this.db.query(`
-            SELECT u.*
+            SELECT u.*, s.expires_on as token_expires_on
             FROM sessions s
             JOIN users u ON s.user = u.id
             WHERE s.token = ?
         `).get(SHA512.hash(token, "base64"));
 
         if(response == null) return null;
-        return UserView.parse(response);
+        return UserView.extend({ token_expires_on: z.coerce.date() }).parse(response);
     }
     
     public getUser(id: number): UserView | null {
@@ -172,11 +173,12 @@ export class Repository {
         const token = crypto.getRandomValues(new Uint8Array(128)).toBase64();
     
         const response = this.db.prepare(`
-            INSERT INTO sessions(token, user, expires_on)
-            VALUES($token, $user, $expires_on)
+            INSERT INTO sessions(token, user, expires_on, creation_time)
+            VALUES($token, $user, $expires_on, $creation_time)
         `).run({
             $token: SHA512.hash(token, "base64"), $user: user,
-            $expires_on: expiresOn.toISOString()
+            $expires_on: expiresOn.toISOString(),
+            $creation_time: new Date().toISOString(),
         });
         
         if(response.changes == 0) return null;
@@ -189,6 +191,15 @@ export class Repository {
             DELETE FROM sessions
             WHERE token = ?
         `).run(SHA512.hash(token, "base64"));
+
+        return response.changes;
+    }
+
+    public deleteExpiredSessions() {
+        const response = this.db.prepare(`
+            DELETE FROM sessions
+            WHERE expires_on < ?
+        `).run(new Date().toISOString());
 
         return response.changes;
     }
