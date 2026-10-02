@@ -58,8 +58,8 @@
                     display: block;
                     width: 100%;
                     height: 100%;
-                    background-image: url('../assets/icon/cross.svg');
-                    background-size: 100%;
+                    background-color: #000;
+                    mask: url('../assets/icon/cross.svg') center / 100% no-repeat;
                 }
             }
 
@@ -68,7 +68,8 @@
                 background: var(--color-main);
 
                 &:before {
-                    background-image: url('../assets/icon/check.svg');
+                    background-color: var(--color-background);
+                    mask: url('../assets/icon/check.svg') center / 100% no-repeat;
                 }
             }
         }

@@ -12,8 +12,8 @@
         }
     }
     &[data-theme="sparkle_red"] {
-        --color-main: #f00;
-        --color-contrast: #ff0;
+        --color-main: #ff0;
+        --color-contrast: #f00;
         --color-background: #400;
         --color-background-lighter: #600;
 
@@ -24,10 +24,10 @@
         }
     }
     &[data-theme="flint"] {
-        --color-main: #0ff;
-        --color-contrast: #0f0;
-        --color-background: #044;
-        --color-background-lighter: #066;
+        --color-main: #8df;
+        --color-contrast: #0ff;
+        --color-background: #234;
+        --color-background-lighter: #478;
 
         .background {
             background: url('./assets/background/flint.png');

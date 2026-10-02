@@ -70,6 +70,31 @@
   </sodipodi:namedview>
   <defs
      id="defs1">
+    <linearGradient
+       id="swatch11"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop12" />
+    </linearGradient>
+    <linearGradient
+       id="swatch2"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop2" />
+    </linearGradient>
+    <linearGradient
+       id="swatch1"
+       inkscape:swatch="solid"
+       inkscape:label="currentColor">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop1" />
+    </linearGradient>
     <inkscape:perspective
        sodipodi:type="inkscape:persp3d"
        inkscape:vp_x="0 : -497.25983 : 1"
@@ -365,20 +390,20 @@
      inkscape:groupmode="layer"
      id="layer1">
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke-width:1.53643"
        id="rect52"
        width="9"
        height="64"
        x="41.108387"
        y="-32.353554"
-       transform="rotate(45)" />
+       transform="rotate(45)"
+       style="fill:currentColor" />
     <rect
-       style="fill:#ffffff;fill-opacity:1;stroke-width:1.53643"
        id="rect53"
        width="9"
        height="64"
        x="-4.8535533"
        y="-77.608391"
-       transform="rotate(135)" />
+       transform="rotate(135)"
+       style="fill:currentColor" />
   </g>
 </svg>

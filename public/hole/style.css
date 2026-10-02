@@ -1,7 +1,7 @@
 @import url('../global.css');
 @import url('../posts.css');
 
-html, body, #root {
+html, body, #root, #app {
     height: 100%;
     margin: 0;
 }
