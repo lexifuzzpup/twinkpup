@@ -23,6 +23,18 @@
             image-rendering: pixelated;
         }
     }
+    &[data-theme="sparkle_green"] {
+        --color-main: #bf0;
+        --color-contrast: #0f0;
+        --color-background: #340;
+        --color-background-lighter: #460;
+
+        .background {
+            background: url('./assets/background/sparkle-green.gif');
+            background-size: 256px;
+            image-rendering: pixelated;
+        }
+    }
     &[data-theme="flint"] {
         --color-main: #8df;
         --color-contrast: #0ff;

@@ -9,6 +9,7 @@ createRoot(document.querySelector("#root")!).render(<Settings />);
 const themeOptions: DropdownItem[] = [
     { value: "sparkle", label: "purple sparklies" },
     { value: "sparkle_red", label: "red sparklies" },
+    { value: "sparkle_green", label: "green sparklies" },
     { value: "flint", label: "FFLIIIINTT!!!" },
     { value: "boring", label: "boring" },
 ]
